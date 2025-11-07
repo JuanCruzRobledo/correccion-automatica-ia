@@ -240,10 +240,10 @@ npm run dev
 ### 4. Configurar n8n
 
 ```bash
-cd n8n-flows
+cd n8n-workflows
 
-# Importar flujo en tu instancia de n8n
-# Ver: n8n-flows/README.md para instrucciones detalladas
+# Importar flujos en tu instancia de n8n
+# Ver: n8n-workflows/README.md para instrucciones detalladas
 ```
 
 ### 5. Acceder al Sistema
@@ -317,8 +317,11 @@ correcion-automatica/
     |
     +-- CONSOLIDATOR_README.md         # Documentacion del consolidador
 |
-+-- n8n-flows/                         # Flujos de n8n
-|   +-- correccion_front.json          # Todos los webhooks
++-- n8n-workflows/                     # Flujos de n8n
+|   +-- workflows-en-un-archivo.json   # Archivo consolidado (todos los workflows)
+|   +-- flujo_correccion_manual.json   # Correccion individual
+|   +-- flujo_correccion_masiva.json   # Correccion batch
+|   +-- create-*-folder.json           # Flujos de carpetas (5 archivos)
 |   +-- README.md                      # Documentacion de flujos n8n
 |
 +-- PROYECTO_PLAN.md                   # Plan maestro del proyecto
@@ -347,7 +350,7 @@ correcion-automatica/
 |------------|---------------|-----------|
 | **Backend** | API REST, endpoints, modelos | `proyecto-correccion/backend/README.md` |
 | **Frontend** | Componentes, flujos de usuario, setup | `proyecto-correccion/frontend-*/README.md` |
-| **n8n Flujos** | Webhooks, configuracion, troubleshooting | `n8n-flows/README.md` |
+| **n8n Flujos** | Webhooks, configuracion, troubleshooting | `n8n-workflows/README.md` |
 | **Consolidador** | Herramienta de consolidacion de proyectos | `proyecto-correccion/CONSOLIDATOR_README.md` |
 
 ---
@@ -507,7 +510,7 @@ npm run build
 ### Flujos de n8n
 ```bash
 # Testing de webhooks
-# Ver: n8n-flows/README.md seccion "Testing"
+# Ver: n8n-workflows/README.md seccion "Testing"
 ```
 
 ---
@@ -529,7 +532,7 @@ cd proyecto-correccion/backend
 ```
 
 ### n8n (n8n Cloud o Self-Hosted)
-- Importar flujos desde `n8n-flows/correccion_front.json`
+- Importar flujos desde `n8n-workflows/workflows-en-un-archivo.json` (o flujos separados)
 - Configurar credenciales de Google
 - Activar workflows
 

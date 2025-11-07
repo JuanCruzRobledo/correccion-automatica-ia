@@ -44,24 +44,81 @@ Gemini      Sheets      Drive
 
 ---
 
-## 📦 Archivo de Flujos
+## 📦 Organización de Archivos
 
-**`correccion_front.json`**: Contiene todos los flujos del sistema en un único archivo exportado de n8n.
+Esta carpeta contiene los workflows de n8n organizados de **dos formas**:
 
-### Webhooks incluidos:
+### 🎯 Opción 1: Archivo Consolidado (Recomendado para inicio rápido)
+
+**`workflows-en-un-archivo.json`**: Contiene **todos los flujos** del sistema en un único archivo exportado de n8n.
+
+**Ventajas:**
+- ✅ Importación rápida: Un solo archivo para configurar todo
+- ✅ Ideal para desarrollo y testing inicial
+- ✅ Mantiene todas las dependencias juntas
+
+**Webhooks incluidos:**
 1. ✨ **Flujos principales de corrección**
    - `/rubrica` - Genera rúbricas desde PDF
-   - `/corregir` - Evalúa entregas de alumnos
+   - `/corregir` - Evalúa entregas de alumnos (manual individual)
    - `/spreadsheet` - Sube resultados a Google Sheets
-   - `/automatico` - Corrección automática batch
+   - `/automatico` - Corrección automática batch (múltiples entregas)
 
 2. 📁 **Flujos de gestión de carpetas en Drive**
    - `/create-university-folder` - Crea carpeta de universidad
    - `/create-faculty-folder` - Crea carpeta de facultad
    - `/create-career-folder` - Crea carpeta de carrera
    - `/create-course-folder` - Crea carpeta de curso
-   - `/create-commission-folder` - Crea carpeta de comisión
-   - `/create-submission-folder` - Crea carpeta de entrega
+   - `/create-commission-folder` - Crea carpeta de comisión + subcarpetas
+
+---
+
+### 🔧 Opción 2: Flujos Separados (Recomendado para producción)
+
+Cada workflow está en su propio archivo para facilitar mantenimiento y versionado independiente.
+
+#### Flujos de Corrección:
+
+| Archivo | Webhook | Descripción |
+|---------|---------|-------------|
+| `flujo_correccion_manual.json` | `/corregir` | Corrección individual de una entrega |
+| `flujo_correccion_masiva.json` | `/automatico` | Corrección batch de múltiples entregas |
+
+#### Flujos de Gestión de Carpetas en Google Drive:
+
+| Archivo | Webhook | Descripción |
+|---------|---------|-------------|
+| `create-university-folder.json` | `/create-university-folder` | Crea carpeta de universidad |
+| `create-faculty-folder.json` | `/create-faculty-folder` | Crea carpeta de facultad |
+| `create-career-folder.json` | `/create-career-folder` | Crea carpeta de carrera |
+| `create-course-folder.json` | `/create-course-folder` | Crea carpeta de curso |
+| `create-commission-folder.json` | `/create-commission-folder` | Crea carpeta de comisión |
+| `Create Commission Folder.json` | (duplicado) | Versión alternativa de comisión |
+
+**Ventajas:**
+- ✅ Control granular: Actualiza solo el flujo que necesitas
+- ✅ Mejor para trabajo en equipo: Menos conflictos en Git
+- ✅ Facilita debugging: Problemas aislados por flujo
+- ✅ Escalabilidad: Agrega nuevos flujos sin afectar existentes
+
+---
+
+### 💡 ¿Cuál usar?
+
+**Para empezar (desarrollo local):**
+```bash
+# Importar archivo consolidado
+workflows-en-un-archivo.json
+```
+
+**Para producción o equipo:**
+```bash
+# Importar flujos separados según necesidad
+flujo_correccion_manual.json
+flujo_correccion_masiva.json
+create-university-folder.json
+# ... etc
+```
 
 ---
 
@@ -377,10 +434,33 @@ VITE_N8N_SPREADSHEET_WEBHOOK=https://tu-n8n.com/webhook/spreadsheet
 
 ### Paso 1: Importar flujos en n8n
 
+Tienes dos opciones para importar los workflows:
+
+#### Opción A: Importar archivo consolidado (Recomendado para inicio rápido)
+
 1. Accede a tu instancia de n8n
 2. Ve a **Workflows** → **Import from File**
-3. Selecciona el archivo **`correccion_front.json`**
+3. Selecciona el archivo **`workflows-en-un-archivo.json`**
 4. Confirma la importación (importará todos los webhooks a la vez)
+
+**Resultado**: Todos los workflows estarán disponibles de inmediato.
+
+#### Opción B: Importar flujos separados (Recomendado para producción)
+
+1. Accede a tu instancia de n8n
+2. Ve a **Workflows** → **Import from File**
+3. Importa cada archivo según necesites:
+   - **Corrección manual**: `flujo_correccion_manual.json`
+   - **Corrección masiva**: `flujo_correccion_masiva.json`
+   - **Carpetas de Drive**:
+     - `create-university-folder.json`
+     - `create-faculty-folder.json`
+     - `create-career-folder.json`
+     - `create-course-folder.json`
+     - `create-commission-folder.json`
+4. Repite el proceso para cada archivo que necesites
+
+**Resultado**: Workflows organizados individualmente, fácil de mantener.
 
 ### Paso 2: Configurar credenciales de Google
 
