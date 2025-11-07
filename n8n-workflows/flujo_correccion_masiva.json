@@ -1,0 +1,1713 @@
+{
+  "name": "pruebaaa",
+  "nodes": [
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "=❎ Error al subir la tarea de {{ $('Alumno actual (Set)').item.json.student_name }} a Gemini!",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        384,
+        16
+      ],
+      "id": "16d08b9d-ff7d-4159-80c3-73c448159fdf",
+      "name": "Error subiendo el codigo a gemini"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "=❎ Error al corregir la tarea de {{ $('Contexto Alumno').item.json.student_name }} en Gemini!",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1280,
+        -80
+      ],
+      "id": "2739972f-ee3c-476a-8bdc-91a83e0283f0",
+      "name": "Respond to Webhook3"
+    },
+    {
+      "parameters": {
+        "resource": "spreadsheet",
+        "title": "Entregas",
+        "sheetsUi": {
+          "sheetValues": [
+            {
+              "title": "={{ $('DATOS').item.json.nombre_rubrica }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -736,
+        -80
+      ],
+      "id": "5f584fec-0542-4603-979a-d2ac32f19990",
+      "name": "Create spreadsheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "n3KenxiMBhQIWtGC",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.spreadsheetUrl }}",
+          "mode": "url"
+        },
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $('Search files and folders4').item.json.id }}",
+          "mode": "id"
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -512,
+        -80
+      ],
+      "id": "d00d1299-eb44-4fe2-ae49-ea3032232098",
+      "name": "Move file1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "11502e79-ffed-48d3-9e32-c9a93534da9d",
+              "name": "drive_root",
+              "value": "https://drive.google.com/drive/u/0/folders/15vLtHZZyy1Fxs5S94lNmUjYdti3Tof-6",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3200,
+        -224
+      ],
+      "id": "f64d38df-d5eb-4eb6-af82-b7868d10eb30",
+      "name": "ROOT DRIVE"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('DATOS').item.json.nombre_universidad }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.drive_root }}",
+            "mode": "url"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -2976,
+        -224
+      ],
+      "id": "23e87ead-1e15-4483-bf94-97f354a2ccd4",
+      "name": "Search files and folders",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('DATOS').item.json.facultad }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -2752,
+        -224
+      ],
+      "id": "ba740185-1208-41c5-9d83-c348e6ca190a",
+      "name": "Search files and folders1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('DATOS').item.json.carrera }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -2528,
+        -224
+      ],
+      "id": "e48ca10a-178e-47e8-988e-9efeda8c1923",
+      "name": "Search files and folders2",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('DATOS').item.json.materia }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -2304,
+        -224
+      ],
+      "id": "8086410d-65b7-40d0-9e54-e71c58a4ad5c",
+      "name": "Search files and folders3",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('DATOS').item.json.comision }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -2080,
+        -224
+      ],
+      "id": "d0bae8ee-4af2-4579-a70d-a4de70d18933",
+      "name": "Search files and folders4",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "searchMethod": "query",
+        "queryString": "=\"{{ $json.id }}\" in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
+        "filter": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -1856,
+        -224
+      ],
+      "id": "fd18540e-0fde-4b86-8857-db399b9baa57",
+      "name": "Search files and folders5",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "student_name",
+              "value": "={{ $json.name }}",
+              "type": "string",
+              "id": "c4c9bdfa-dfbc-4f08-bfe5-2824088301fc"
+            },
+            {
+              "name": "student_folder_id",
+              "value": "={{ $json.id }}",
+              "type": "string",
+              "id": "b868ea40-f1af-4048-84cd-c3e81182b77d"
+            },
+            {
+              "name": "commision_name",
+              "value": "={{ $('Search files and folders4').item.json.name }}",
+              "type": "string",
+              "id": "09727d2f-0012-4d6d-b0df-3a29cfe66bbb"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "438e79ec-31c9-4f0d-83b1-42f29071a337",
+      "name": "Alumno actual (Set)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1408,
+        -272
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $('Alumno actual (Set)').item.json.student_folder_id }}",
+            "mode": "id"
+          },
+          "whatToSearch": "files"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -288,
+        -176
+      ],
+      "id": "5912dbf7-c806-46a5-adca-ebcb2a3f0af6",
+      "name": "Search files and folders6",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -64,
+        -176
+      ],
+      "id": "582fc68f-9339-4c79-b0ad-06e34486c2ad",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/upload/v1beta/files?key={{$('DATOS').item.json.apiKey}}&uploadType=media",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{ \"Content-Type\": \"text/plain\" }",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "id": "15b5cfc7-df13-4247-88c8-2909ad52b69a",
+      "name": "Gemini: Upload código (.py)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        160,
+        -176
+      ],
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "maxTries": 5,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3f6eeb46-38d7-4ec3-a0e1-128924437049",
+              "name": "entrerga_uri",
+              "value": "={{ $json.file.uri }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        384,
+        -272
+      ],
+      "id": "37cadfdf-3cad-4715-8fdb-85cff3ce00d0",
+      "name": "Entrega URI"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "student_name",
+              "value": "={{ $('Alumno actual (Set)').item.json.student_name }}",
+              "type": "string",
+              "id": "85e2912d-ad7b-4b28-ab02-13cb3bcff07b"
+            },
+            {
+              "name": "commision_name",
+              "value": "={{ $('Alumno actual (Set)').item.json.commision_name }}",
+              "type": "string",
+              "id": "b104e926-e301-4917-964a-920db101a99b"
+            },
+            {
+              "name": "entrega_uri",
+              "value": "={{ $json.entrerga_uri }}",
+              "type": "string",
+              "id": "1af43832-7bd6-4f64-82cf-1f5938acf844"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7bcea642-8783-4d04-83b2-23f36d5f0a14",
+      "name": "Contexto Alumno",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        608,
+        -272
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gemini Body Builder - Versión mejorada para detección precisa de estructuras prohibidas\n\n// Asegurar que la rúbrica sea string\nconst rubricaStr = JSON.stringify($('DATOS').first().json.rubrica)\n\nconst fileUri = $input.first().json.entrega_uri;\n\nif (!fileUri) {\n  return [{ json: { ...$json, estado: \"Error upload Gemini\", error: \"missing fileUri\" } }];\n}\n\nconst mimeType = \"text/plain\";  // Corregido de \"plain/text\"\nconst alumno = $input.first().json.student_name\nconst archivo = \"entrega\"\n\nconst body = {\n    generationConfig: {\n        temperature: 0,\n        topK: 1,\n        topP: 1,  // Cambiado de 0 a 1\n        candidateCount: 1,\n        // seed: 42,  // ELIMINADO - No soportado por Gemini\n        // thinkingConfig: { thinkingBudget: 15000 },  // ELIMINADO - No soportado\n        responseMimeType: \"application/json\",  // Cambiado de response_mime_type a responseMimeType\n        responseSchema: {  // Cambiado de response_schema a responseSchema\n            type: \"object\",\n            properties: {\n                alumno: { type: \"string\" },\n                puntaje_total: { type: \"number\" },\n                criterios: { type: \"string\" },\n                fortalezas: { type: \"string\" },\n                recomendaciones: { type: \"string\" }\n            },\n            required: [\"alumno\", \"puntaje_total\", \"criterios\", \"fortalezas\", \"recomendaciones\"]\n        }\n    },\n    contents: [{\n        role: \"user\",\n        parts: [\n            {\n                text: `Eres un corrector automático consistente y determinista. Tu única fuente de verdad es la rúbrica JSON provista.\nNo interpretes, no inventes criterios, no asignes puntos por intuición.\nTu objetivo es producir una calificación reproducible (entera 0–100) a partir de los criterios, pesos y penalizaciones definidos.\n\nEntradas\n\nRUBRICA PARA CORREGIR: {{ $('Start').item.json.toJsonString() }}\n\n\n\nentrega: contenido textual del examen o archivo del alumno (por ejemplo, código fuente).\n\n\nProceso de evaluación\n\nInterpretación de la rúbrica\n\nUsa exclusivamente los campos definidos en criteria, penalties, mandatory_fail_conditions.\n\nConsidera grading.total_points como el total máximo (por defecto 100).\n\nCada criterio tiene un weight (0..1). Su puntaje máximo es weight * total_points.\n\nEvaluación de criterios (nota_original)\n\nPara cada criterio:\n\nEvalúa objetivamente si la entrega cumple completamente (100%), parcialmente (50%) o no cumple (0%) según la descripción textual del criterio.\n\nMultiplica el grado de cumplimiento por el peso del criterio y por el total de puntos.\n\nSuma todos los puntajes parciales.\n\nRedondea el total al entero más cercano (usar half_up si se define).\n\nAsegura que nota_original sea un número entero entre 0 y 100.\n\nPenalizaciones\n\nRecorre los penalties.\n\nSi la entrega incurre en alguna penalización (por ejemplo, estructuras prohibidas, validaciones ausentes, mensajes incoherentes), resta el porcentaje indicado.\n\nAplica los descuentos multiplicativamente:\nnota_penalizada = nota_original * Π(1 - penalty_percent/100)\n\nSi mandatory_fail_conditions se cumple, recorta la nota final al máximo indicado (max_final_score del 10%, 15%, etc.).\n\nRedondea el resultado final al entero más cercano entre 0 y 100.\n\nrecomendaciones: ofrece acciones específicas y concretas (máx. 4 ítems) para mejorar esos criterios en una próxima entrega.\n\nConsistencia\n\nCada vez que se procese la misma entrega con la misma rúbrica, el resultado debe ser idéntico (determinismo total).\n\nNo uses sinónimos, intuición ni estilo narrativo.\n\nLos puntajes se basan exclusivamente en las frases de la rúbrica y sus pesos.\n\nSalida obligatoria\n\nDevuelve únicamente una salida con esta plantilla de ejemplo (NO HACE FALTA QUE SEAN LOS MISMOS CRITERIOS QUE LA PLANTILLA, LOS CRITERIOS DEBEN SER LOS criteria.id, LOS TITULOS LOS critaria.name, Y SU PUNTAJE criteria.weight NO UTILICES LOS TASK COMO CRITERIOS),\n\nEJEMPLO: \n\nRubrica -->\n        \"criteria\": [\n        {\n            \"id\": \"C1\",\n            \"name\": \"Correctitud funcional y lógica\",\n            \"weight\": 0.25\n        }\n        {\n            \"id\": \"C2\",\n            \"name\": \"Manipulación de Listas (Indexación, Slicing y Métodos)\",\n            \"weight\": 0.2\n        }\nDevolucion -->\n✅C1 — Correctitud funcional y lógica: 24 / 25 · El código es legible, está bien indentado, utiliza nombres de variables significativos y presenta una estructura lógica fácil de seguir.\n\n⚠️C2 — Manipulación de Listas (Indexación, Slicing y Métodos): 15 / 20 · Se implementan de manera incorrecta ciertas operaciones de las listas.\n\nDEBES MARCAR cada uno de los criterios con emoji segun su % de completitud para cada weight [✅ = 80% - 100%, ⚠️ = 60% - 79%, ❌ = 0% - 59%], ademas, al calificar cada criterio debes poner cuantos puntos obtuvo seguido de los puntos totales para ese criterio, ejemplo 10/15:\n\nHola 👋\n\nTu nota final es 8.\n\n📌 Resumen por criterios\n\n✅C1 — Implementación de Entidades del Dominio: 90 / 100 · Implementación de la mayoría de las entidades del dominio. Persona no es abstracta. Falta validación de DNI con regex en el constructor de Persona.\n\n❌C2 — Implementación de Lógica de Negocio (Service Pattern): 40 / 100 · Implementa la interface CitaService y la clase CitaManager, pero los métodos guardarCitas() y cargarCitas() están vacíos. No usa ConcurrentHashMap para thread-safety. No se implementan las validaciones completas en programarCita().\n\n❌C3 — Validaciones y Reglas de Negocio: 40 / 100 · Validación de fecha futura y costo positivo implementadas. No se validan la disponibilidad de médico/sala ni la compatibilidad de especialidades. Validación de DNI implementada. Validación de Matrícula implementada. Validaciones de strings no nulos/vacíos implementadas.\n\n⚠️C4 — Patrones de Diseño y Arquitectura: 70 / 100 · Patrón Service implementado (CitaService/CitaManager). Enums implementados (TipoSangre, EspecialidadMedica, EstadoCita). Persona no es abstracta, por lo que no se aplica Template Method. CitaManager centraliza la coordinación de citas. Separación de responsabilidades implementada. Uso apropiado de atributos final para datos core en Cita.\n\n✅C5 — Relaciones y Asociaciones entre Entidades: 80 / 100 · Relaciones Hospital ↔ Departamento y Hospital ↔ Paciente implementadas. Relación Departamento ↔ Medico implementada. Relación Departamento ↔ Sala implementada. Relación Paciente ↔ HistoriaClinica implementada. Relación Cita ↔ (Paciente, Medico, Sala) implementada. Prevención de duplicados implementada.\n\n❌C6 — Persistencia de Datos (CSV): 40 / 100 · Método toCsvString() en Cita implementado. Método fromCsvString() en Cita implementado. Métodos guardarCitas() y cargarCitas() en CitaManager no implementados.\n\n✅C7 — Programa Main - Demostración Completa: 80 / 100 · Inicialización de Hospital y Departamentos implementada. Registro de médicos con especialidades implementado. Registro de pacientes con historias clínicas implementado. Programación de citas implementada. Consultas del sistema implementadas. Persistencia no implementada. Validaciones no implementadas. Estadísticas implementadas. El programa se ejecuta sin errores.\n\n✅C8 — Calidad de Código y Buenas Prácticas: 100 / 100 · Nomenclatura correcta. Código bien estructurado. Encapsulación implementada. Manejo de excepciones implementado. Comentarios implementados. · Sin evidencia concreta ⇒ No se penaliza, sólo se recomienda.\n\n💡 Fortalezas detectadas\n\n🌟 Buen uso de Lombok para reducir el boilerplate code.\n🌟 Implementación de la mayoría de las entidades del dominio.\n\n🛠️ Recomendaciones\n\nEl proyecto presenta una buena estructura y organización, con un uso adecuado de JPA para la persistencia de datos. Sin embargo, la falta de implementación de la persistencia CSV y algunas validaciones críticas impactan negativamente en la nota final. Además, la clase Persona debe ser abstracta para cumplir con el patrón Template Method.\n\n`\n            },\n            { fileData: { fileUri, mimeType } },\n            { text: \"RÚBRICA JSON:\" },\n            { text: rubricaStr },\n            { text: \"METADATOS:\" },\n            { text: \"alumno=\" + alumno },\n            { text: \"archivo=\" + archivo }\n        ]\n    }]\n};\n\nreturn [{ json: { geminiBody: body } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        -272
+      ],
+      "id": "a019fe11-b44c-4120-9bc0-edb3a0a11656",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={{ $('DATOS').first().json.apiKey }}",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{ \"Content-Type\": \"application/json\" }",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.geminiBody }}",
+        "options": {}
+      },
+      "id": "7f693e6d-6f0f-4d5f-8210-3eea935ec380",
+      "name": "Gemini: Corregir (rúbrica + .py)1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1056,
+        -272
+      ],
+      "retryOnFail": true,
+      "waitBetweenTries": 3000,
+      "maxTries": 5,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parser de respuesta de Gemini\n\nconst geminiResponse = $input.first().json;\n\ntry {\n  // La respuesta puede venir directamente como array o dentro de una propiedad\n  let responseArray;\n  \n  // Intentar diferentes estructuras posibles\n  if (Array.isArray(geminiResponse)) {\n    responseArray = geminiResponse;\n  } else if (geminiResponse.body && Array.isArray(geminiResponse.body)) {\n    responseArray = geminiResponse.body;\n  } else if (geminiResponse.data && Array.isArray(geminiResponse.data)) {\n    responseArray = geminiResponse.data;\n  } else {\n    // Si no es array, intentar acceder directamente\n    responseArray = [geminiResponse];\n  }\n  \n  // Navegar a la estructura de respuesta de Gemini\n  const candidate = responseArray[0]?.candidates?.[0];\n  \n  if (!candidate) {\n    // Debug: mostrar la estructura recibida\n    throw new Error(`No se encontró candidate. Estructura recibida: ${JSON.stringify(geminiResponse).substring(0, 200)}`);\n  }\n  \n  const textContent = candidate.content?.parts?.[0]?.text;\n  \n  if (!textContent) {\n    throw new Error(\"No se encontró texto en la respuesta\");\n  }\n  \n  // Parsear el JSON que viene como string dentro de text\n  const parsedData = JSON.parse(textContent);\n  \n  // Extraer las propiedades necesarias\n  const resultado = {\n    alumno: $('Contexto Alumno').first().json.student_name || \"\",\n    puntaje_total: parsedData.puntaje_total || 0,\n    criterios: parsedData.criterios || \"\",\n    fortalezas: parsedData.fortalezas || \"\",\n    recomendaciones: parsedData.recomendaciones || \"\"\n  };\n  \n  return [{ json: resultado }];\n  \n} catch (error) {\n  return [{ \n    json: { \n      error: \"Error al parsear respuesta de Gemini\",\n      detalle: error.message,\n      debug_input: JSON.stringify(geminiResponse).substring(0, 500), // Primeros 500 caracteres para debug\n      alumno: \"\",\n      puntaje_total: 0,\n      criterios: \"\",\n      fortalezas: \"\",\n      recomendaciones: \"\"\n    } \n  }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1280,
+        -320
+      ],
+      "id": "e89bc8cb-cce3-4afa-aa3c-9e75de961ee8",
+      "name": "Code2"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "Entregas",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $('Search files and folders4').item.json.id }}",
+            "mode": "id"
+          },
+          "whatToSearch": "files"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -1184,
+        -272
+      ],
+      "id": "0819d5b3-eae4-43f6-94c0-ffc3d2272d3c",
+      "name": "Search files and folders8",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "14f7aaeb-b9ca-403c-9074-ab845cf7878e",
+              "leftValue": "={{ $json.name }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -960,
+        -272
+      ],
+      "id": "bf5ccbc6-5585-4812-bb25-b07a7163d9f9",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Search files and folders8').item.json.id ||  $('Create spreadsheet1').item.json.spreadsheetId }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $('DATOS').item.json.nombre_rubrica }}",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "alumno"
+          ],
+          "schema": [
+            {
+              "id": "alumno",
+              "displayName": "alumno",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1504,
+        -320
+      ],
+      "id": "9aebbed2-d49d-41c6-91a9-28cec21ca8cf",
+      "name": "Append row in sheet",
+      "retryOnFail": false,
+      "alwaysOutputData": false,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "a188IOItKn6BhSCO",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5d38bca3-55bc-416e-bf67-d040f929ce73",
+              "name": "nombre_universidad",
+              "value": "={{ $json.body_university_id }}",
+              "type": "string"
+            },
+            {
+              "id": "2b52c9d2-fef4-4398-bb40-06dd43a3e6e1",
+              "name": "facultad",
+              "value": "={{ $json.body_faculty_id }}",
+              "type": "string"
+            },
+            {
+              "id": "357cc863-6e6f-40b4-8729-42b288efed0c",
+              "name": "carrera",
+              "value": "={{ $json.body_career_id }}",
+              "type": "string"
+            },
+            {
+              "id": "52edaaa7-9a4d-4ee8-87db-7d23effd55d5",
+              "name": "materia",
+              "value": "={{ $json.body_course_id }}",
+              "type": "string"
+            },
+            {
+              "id": "4aa84934-e310-4629-b7b0-308ab5a9ba57",
+              "name": "comision",
+              "value": "={{ $json.body_commission_id }}",
+              "type": "string"
+            },
+            {
+              "id": "806e62d9-5423-4a37-ad02-3aa8348f5a21",
+              "name": "apiKey",
+              "value": "={{ $json.body_gemini_api_key }}",
+              "type": "string"
+            },
+            {
+              "id": "3a5520b8-7e11-40ea-8da9-73d0f100166a",
+              "name": "nombre_rubrica",
+              "value": "={{ $json.body_rubric_json_rubric_id }}",
+              "type": "string"
+            },
+            {
+              "id": "5c96a24f-fae9-41b8-bfa7-47a70479d47d",
+              "name": "rubrica",
+              "value": "={{ $json.body_rubric_json }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3424,
+        -224
+      ],
+      "id": "fc8ae834-c2be-4955-bd8c-5b43f51ae885",
+      "name": "DATOS"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1632,
+        -224
+      ],
+      "id": "ae792539-f698-46a9-85aa-b2a4e806ef9b",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "VKL0sjGjgURUIgMx",
+          "mode": "list",
+          "cachedResultName": "alumnos_corregidos",
+          "cachedResultUrl": "/projects/5Xyund7HlaEc8F9U/datatables/VKL0sjGjgURUIgMx"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nombre": "={{ $json.alumno }}"
+          },
+          "matchingColumns": [
+            "nombre"
+          ],
+          "schema": [
+            {
+              "id": "nombre",
+              "displayName": "nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        1728,
+        -320
+      ],
+      "id": "709ff253-df6a-409a-8c97-26a5bc7998af",
+      "name": "Insert row"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "mark-corrected-now",
+              "name": "corregido_ahora",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1952,
+        -56
+      ],
+      "id": "d728e5c6-e638-4dee-92bd-3db928ec395d",
+      "name": "Marcar como corregido"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $('DATOS').item.json.nombre_rubrica }}",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "alumno",
+              "lookupValue": "={{ $('Alumno actual (Set)').item.json.student_name }}"
+            }
+          ]
+        },
+        "combineFilters": "OR",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -736,
+        -272
+      ],
+      "id": "5f720d7b-e8ef-42f0-9630-ac99e589fd89",
+      "name": "Get row(s) in sheet",
+      "retryOnFail": false,
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "a188IOItKn6BhSCO",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c999c517-3b2c-442a-8f23-2872fc258bda",
+              "leftValue": "={{0}}",
+              "rightValue": "={{ $json.values().length }}",
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -512,
+        -272
+      ],
+      "id": "208c5da0-7274-409d-9405-3e9ba336dbb4",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "toJsonString",
+              "type": "any"
+            },
+            {
+              "name": "body_university_id",
+              "type": "any"
+            },
+            {
+              "name": "body_faculty_id",
+              "type": "any"
+            },
+            {
+              "name": "body_career_id",
+              "type": "any"
+            },
+            {
+              "name": "body_course_id",
+              "type": "any"
+            },
+            {
+              "name": "body_commission_id",
+              "type": "any"
+            },
+            {
+              "name": "body_gemini_api_key",
+              "type": "any"
+            },
+            {
+              "name": "body_rubric_json_rubric_id",
+              "type": "any"
+            },
+            {
+              "name": "body_rubric_json",
+              "type": "any"
+            }
+          ]
+        }
+      },
+      "id": "65259648-3787-42f0-95d1-c68fd3b3558f",
+      "typeVersion": 1.1,
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        -3648,
+        -224
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Contador de alumnos corregidos exitosamente en ESTA ejecución\n// Solo cuenta los items que tienen el campo 'corregido_ahora' = true\n\nconst todosLosItems = $input.all();\nconst itemsCorregidosAhora = todosLosItems.filter(item => item.json.corregido_ahora === true);\nconst cantidadCorregidos = itemsCorregidosAhora.length;\n\nreturn [\n  { \n    json: { \n      cantidad_corregidos: cantidadCorregidos,\n      total_procesados: todosLosItems.length\n    } \n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1408,
+        -464
+      ],
+      "id": "2ccfb841-6f7e-4fa5-b210-39eb1387fa5b",
+      "name": "Contador Alumnos Corregidos"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1b2af05-2474-4bd0-b1de-2a3fab055a1b",
+              "name": "cantidad_corregidos",
+              "value": "={{ $json.cantidad_corregidos }}",
+              "type": "string"
+            },
+            {
+              "id": "d627182f-005a-4911-a471-d4eb8a4f9ea3",
+              "name": "cantidad_total_corregidos",
+              "value": "={{ $json.total_procesados }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1184,
+        -464
+      ],
+      "id": "0384ae01-00f4-44dc-842f-5fcf3c1b009c",
+      "name": "Edit Fields"
+    }
+  ],
+  "pinData": {
+    "Start": [
+      {
+        "json": {
+          "toJsonString": {
+            "rubric_id": "practico-5-listas",
+            "title": "Práctico 5: Listas",
+            "version": "1.0",
+            "assessment_type": "tp",
+            "course": "Programación 1",
+            "language_or_stack": [
+              "python"
+            ],
+            "submission": {
+              "single_file": true,
+              "accepted_extensions": [
+                ".py"
+              ],
+              "delivery_channel": "plataforma",
+              "constraints": [
+                "El código fuente debe ser entregado en un único archivo Python (.py)."
+              ]
+            },
+            "grading": {
+              "policy": "weighted_average",
+              "rounding": "half_up",
+              "total_points": 100
+            },
+            "criteria": [
+              {
+                "id": "C1",
+                "name": "Correctitud y Funcionalidad",
+                "weight": 0.35,
+                "description": "El código funciona correctamente, produce los resultados esperados según las consignas, y los cálculos son precisos.",
+                "subcriteria": []
+              },
+              {
+                "id": "C2",
+                "name": "Manipulación de Listas (simples y anidadas)",
+                "weight": 0.25,
+                "description": "Aplicación correcta de conceptos fundamentales de listas: creación, indexación, slicing, modificación de elementos, uso de métodos integrados (ej. append, remove, sorted) y manejo adecuado de listas anidadas (matrices).",
+                "subcriteria": []
+              },
+              {
+                "id": "C3",
+                "name": "Uso de Estructuras Repetitivas y Control de Flujo",
+                "weight": 0.15,
+                "description": "Implementación efectiva de bucles (for, while) y condicionales (if/else) para recorrer listas, realizar operaciones y presentar resultados.",
+                "subcriteria": []
+              },
+              {
+                "id": "C4",
+                "name": "Legibilidad y Buenas Prácticas de Programación",
+                "weight": 0.15,
+                "description": "El código es claro, fácil de entender, utiliza nombres de variables significativos, está bien comentado donde sea necesario y sigue convenciones básicas de estilo (ej. indentación adecuada).",
+                "subcriteria": []
+              },
+              {
+                "id": "C5",
+                "name": "Resolución de Problemas Específicos",
+                "weight": 0.1,
+                "description": "Capacidad para abordar y resolver requisitos particulares de las consignas.",
+                "subcriteria": []
+              }
+            ],
+            "penalties": [
+              {
+                "description": "Plagio detectado en cualquier parte del código.",
+                "penalty_percent": 100
+              },
+              {
+                "description": "Entrega fuera de formato o con extensiones incorrectas.",
+                "penalty_percent": 10
+              }
+            ],
+            "mandatory_fail_conditions": [],
+            "tasks": [
+              {
+                "label": "T1",
+                "prompt_excerpt": "Crear una lista con las notas de 10 estudiantes. Mostrar la lista, promedio, nota más alta y más baja.",
+                "points": 10,
+                "links_to_criteria": [
+                  "C1",
+                  "C2",
+                  "C3"
+                ]
+              },
+              {
+                "label": "T2",
+                "prompt_excerpt": "Pedir al usuario que cargue 5 productos, mostrar ordenada alfabéticamente, eliminar un producto solicitado.",
+                "points": 10,
+                "links_to_criteria": [
+                  "C1",
+                  "C2",
+                  "C3",
+                  "C5"
+                ]
+              },
+              {
+                "label": "T3",
+                "prompt_excerpt": "Generar lista con 15 números al azar, separar en pares e impares.",
+                "points": 10,
+                "links_to_criteria": [
+                  "C1",
+                  "C2",
+                  "C3"
+                ]
+              },
+              {
+                "label": "T4",
+                "prompt_excerpt": "Dada lista con valores repetidos, crear lista sin duplicados.",
+                "points": 10,
+                "links_to_criteria": [
+                  "C1",
+                  "C2",
+                  "C3",
+                  "C5"
+                ]
+              },
+              {
+                "label": "T5",
+                "prompt_excerpt": "Crear lista de nombres de estudiantes, agregar o eliminar.",
+                "points": 10,
+                "links_to_criteria": [
+                  "C1",
+                  "C2",
+                  "C3"
+                ]
+              },
+              {
+                "label": "T6",
+                "prompt_excerpt": "Rotar elementos de lista una posición a la derecha.",
+                "points": 10,
+                "links_to_criteria": [
+                  "C1",
+                  "C2",
+                  "C5"
+                ]
+              },
+              {
+                "label": "T7",
+                "prompt_excerpt": "Matriz de temperaturas, calcular amplitud térmica.",
+                "points": 10,
+                "links_to_criteria": [
+                  "C1",
+                  "C2",
+                  "C3",
+                  "C5"
+                ]
+              },
+              {
+                "label": "T8",
+                "prompt_excerpt": "Matriz de notas de estudiantes, calcular promedios.",
+                "points": 10,
+                "links_to_criteria": [
+                  "C1",
+                  "C2",
+                  "C3"
+                ]
+              },
+              {
+                "label": "T9",
+                "prompt_excerpt": "Tablero Ta-Te-Ti con listas anidadas.",
+                "points": 10,
+                "links_to_criteria": [
+                  "C1",
+                  "C2",
+                  "C3",
+                  "C5"
+                ]
+              },
+              {
+                "label": "T10",
+                "prompt_excerpt": "Matriz de ventas, mostrar totales y estadísticas.",
+                "points": 10,
+                "links_to_criteria": [
+                  "C1",
+                  "C2",
+                  "C3",
+                  "C5"
+                ]
+              }
+            ]
+          },
+          "body_university_id": "utn",
+          "body_faculty_id": "frm",
+          "body_career_id": "isi-frm",
+          "body_course_id": "2025-programacion-1",
+          "body_commission_id": "2025-programacion-1-comision-1",
+          "body_gemini_api_key": "AIzaSyDRKSDwI-sEM3NPE75M-47L3DNXCfvqnmQ",
+          "body_rubric_json_rubric_id": "practico-5-listas",
+          "body_rubric_json": {
+            "rubric_id": "practico-5-listas",
+            "title": "Práctico 5: Listas",
+            "version": "1.0",
+            "assessment_type": "tp",
+            "course": "Programación 1",
+            "language_or_stack": [
+              "python"
+            ],
+            "submission": {
+              "single_file": true,
+              "accepted_extensions": [
+                ".py"
+              ],
+              "delivery_channel": "plataforma",
+              "constraints": [
+                "El código fuente debe ser entregado en un único archivo Python (.py)."
+              ]
+            },
+            "grading": {
+              "policy": "weighted_average",
+              "rounding": "half_up",
+              "total_points": 100
+            },
+            "criteria": [
+              {
+                "id": "C1",
+                "name": "Correctitud y Funcionalidad",
+                "weight": 0.35,
+                "description": "El código funciona correctamente, produce los resultados esperados según las consignas, y los cálculos son precisos.",
+                "subcriteria": []
+              },
+              {
+                "id": "C2",
+                "name": "Manipulación de Listas (simples y anidadas)",
+                "weight": 0.25,
+                "description": "Aplicación correcta de conceptos fundamentales de listas: creación, indexación, slicing, modificación de elementos, uso de métodos integrados (ej. append, remove, sorted) y manejo adecuado de listas anidadas (matrices).",
+                "subcriteria": []
+              },
+              {
+                "id": "C3",
+                "name": "Uso de Estructuras Repetitivas y Control de Flujo",
+                "weight": 0.15,
+                "description": "Implementación efectiva de bucles (for, while) y condicionales (if/else) para recorrer listas, realizar operaciones y presentar resultados.",
+                "subcriteria": []
+              },
+              {
+                "id": "C4",
+                "name": "Legibilidad y Buenas Prácticas de Programación",
+                "weight": 0.15,
+                "description": "El código es claro, fácil de entender, utiliza nombres de variables significativos, está bien comentado donde sea necesario y sigue convenciones básicas de estilo (ej. indentación adecuada).",
+                "subcriteria": []
+              },
+              {
+                "id": "C5",
+                "name": "Resolución de Problemas Específicos",
+                "weight": 0.1,
+                "description": "Capacidad para abordar y resolver requisitos particulares de las consignas.",
+                "subcriteria": []
+              }
+            ],
+            "penalties": [
+              {
+                "description": "Plagio detectado en cualquier parte del código.",
+                "penalty_percent": 100
+              },
+              {
+                "description": "Entrega fuera de formato o con extensiones incorrectas.",
+                "penalty_percent": 10
+              }
+            ],
+            "mandatory_fail_conditions": [],
+            "tasks": [
+              {
+                "label": "T1",
+                "prompt_excerpt": "Crear una lista con las notas de 10 estudiantes. Mostrar la lista, promedio, nota más alta y más baja.",
+                "points": 10,
+                "links_to_criteria": [
+                  "C1",
+                  "C2",
+                  "C3"
+                ]
+              },
+              {
+                "label": "T2",
+                "prompt_excerpt": "Pedir al usuario que cargue 5 productos, mostrar ordenada alfabéticamente, eliminar un producto solicitado.",
+                "points": 10,
+                "links_to_criteria": [
+                  "C1",
+                  "C2",
+                  "C3",
+                  "C5"
+                ]
+              },
+              {
+                "label": "T3",
+                "prompt_excerpt": "Generar lista con 15 números al azar, separar en pares e impares.",
+                "points": 10,
+                "links_to_criteria": [
+                  "C1",
+                  "C2",
+                  "C3"
+                ]
+              },
+              {
+                "label": "T4",
+                "prompt_excerpt": "Dada lista con valores repetidos, crear lista sin duplicados.",
+                "points": 10,
+                "links_to_criteria": [
+                  "C1",
+                  "C2",
+                  "C3",
+                  "C5"
+                ]
+              },
+              {
+                "label": "T5",
+                "prompt_excerpt": "Crear lista de nombres de estudiantes, agregar o eliminar.",
+                "points": 10,
+                "links_to_criteria": [
+                  "C1",
+                  "C2",
+                  "C3"
+                ]
+              },
+              {
+                "label": "T6",
+                "prompt_excerpt": "Rotar elementos de lista una posición a la derecha.",
+                "points": 10,
+                "links_to_criteria": [
+                  "C1",
+                  "C2",
+                  "C5"
+                ]
+              },
+              {
+                "label": "T7",
+                "prompt_excerpt": "Matriz de temperaturas, calcular amplitud térmica.",
+                "points": 10,
+                "links_to_criteria": [
+                  "C1",
+                  "C2",
+                  "C3",
+                  "C5"
+                ]
+              },
+              {
+                "label": "T8",
+                "prompt_excerpt": "Matriz de notas de estudiantes, calcular promedios.",
+                "points": 10,
+                "links_to_criteria": [
+                  "C1",
+                  "C2",
+                  "C3"
+                ]
+              },
+              {
+                "label": "T9",
+                "prompt_excerpt": "Tablero Ta-Te-Ti con listas anidadas.",
+                "points": 10,
+                "links_to_criteria": [
+                  "C1",
+                  "C2",
+                  "C3",
+                  "C5"
+                ]
+              },
+              {
+                "label": "T10",
+                "prompt_excerpt": "Matriz de ventas, mostrar totales y estadísticas.",
+                "points": 10,
+                "links_to_criteria": [
+                  "C1",
+                  "C2",
+                  "C3",
+                  "C5"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "Gemini: Corregir (rúbrica + .py)1": [
+      {
+        "json": {
+          "candidates": [
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"alumno\": \"AZARIEL NICOLAS FRICKEL_96585_assignsubmission_onlinetext\",\n  \"puntaje_total\": 97,\n  \"criterios\": \"✅C1 — Correctitud y Funcionalidad: 33 / 35 · El código es mayormente correcto y funcional en todas las tareas. La implementación del tablero de Ta-Te-Ti (Tarea 9) maneja las jugadas y turnos, pero no incluye la lógica de detección de victoria o empate.✅C2 — Manipulación de Listas (simples y anidadas): 25 / 25 · Excelente y variado uso de operaciones de listas (append, remove, sorted, pop, insert, in) y manejo efectivo de listas anidadas (matrices) en múltiples tareas.✅C3 — Uso de Estructuras Repetitivas y Control de Flujo: 15 / 15 · Aplicación consistente y correcta de bucles (for, while), condicionales (if/else/elif) y manejo de excepciones (try-except) para la validación de entrada.✅C4 — Legibilidad y Buenas Prácticas de Programación: 15 / 15 · El código es claro, bien indentado, utiliza nombres de variables significativos y sigue buenas prácticas de estructuración, incluyendo el uso de una función para mostrar el tablero.✅C5 — Resolución de Problemas Específicos: 9 / 10 · Todos los requisitos específicos de las consignas son abordados. La Tarea 9 implementa el tablero y las jugadas, pero la lógica completa del juego (condiciones de victoria/empate) no está presente.\",\n  \"fortalezas\": \"Dominio sólido de las operaciones básicas y avanzadas de listas, incluyendo listas anidadas.Aplicación efectiva de estructuras de control de flujo y bucles para resolver problemas.Código legible y bien estructurado con nombres de variables significativos.\",\n  \"recomendaciones\": \"Para Task 9 (Ta-Te-Ti), implementar la lógica para detectar un ganador o un empate.Considerar añadir comentarios en secciones más complejas o para explicar decisiones de diseño.Explorar la validación de entradas del usuario de forma más robusta (ej. bucles para re-pedir entrada hasta que sea válida).Practicar el uso de funciones para encapsular la lógica de cada tarea, mejorando la modularidad.\"\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "finishReason": "STOP",
+              "index": 0
+            }
+          ],
+          "usageMetadata": {
+            "promptTokenCount": 4958,
+            "candidatesTokenCount": 520,
+            "totalTokenCount": 9534,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 4958
+              }
+            ],
+            "thoughtsTokenCount": 4056
+          },
+          "modelVersion": "gemini-2.5-flash",
+          "responseId": "oD4FaerMMKC8_uMPjr370Ao"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "ROOT DRIVE": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders1": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders2": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders3": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders4": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders5": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alumno actual (Set)": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders6": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Gemini: Upload código (.py)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini: Upload código (.py)": {
+      "main": [
+        [
+          {
+            "node": "Entrega URI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error subiendo el codigo a gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Entrega URI": {
+      "main": [
+        [
+          {
+            "node": "Contexto Alumno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contexto Alumno": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Gemini: Corregir (rúbrica + .py)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini: Corregir (rúbrica + .py)1": {
+      "main": [
+        [
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders8": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create spreadsheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders6",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create spreadsheet1": {
+      "main": [
+        [
+          {
+            "node": "Move file1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move file1": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Insert row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DATOS": {
+      "main": [
+        [
+          {
+            "node": "ROOT DRIVE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Contador Alumnos Corregidos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Alumno actual (Set)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert row": {
+      "main": [
+        [
+          {
+            "node": "Marcar como corregido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marcar como corregido": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "DATOS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contador Alumnos Corregidos": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1b2790c6-2971-45d8-8068-787d34ac7f2c",
+  "meta": {
+    "instanceId": "f0981ae4c0ef6f915f0b46ae60edab85d4bd6cddc77dbd7c3bcb8e7a3ea6e2a7"
+  },
+  "id": "QTJuJMDHboIYqyYW",
+  "tags": []
+}
