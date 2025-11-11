@@ -48,6 +48,13 @@ export const CareersManager = () => {
   const [checkingDuplicate, setCheckingDuplicate] = useState(false);
   const [isDuplicate, setIsDuplicate] = useState(false);
 
+  // Actualizar filtro de universidad cuando userUniversityId está disponible
+  useEffect(() => {
+    if (userUniversityId && !filterUniversityId) {
+      setFilterUniversityId(userUniversityId);
+    }
+  }, [userUniversityId]);
+
   // Cargar datos al montar
   useEffect(() => {
     loadData();

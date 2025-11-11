@@ -90,6 +90,13 @@ export const RubricsManager = () => {
   const [submitting, setSubmitting] = useState(false);
   const [generatingFromPDF, setGeneratingFromPDF] = useState(false);
 
+  // Actualizar filtro de universidad cuando userUniversityId está disponible
+  useEffect(() => {
+    if (userUniversityId && !filterUniversityId) {
+      setFilterUniversityId(userUniversityId);
+    }
+  }, [userUniversityId]);
+
   // Cargar datos al montar
   useEffect(() => {
     loadData();
