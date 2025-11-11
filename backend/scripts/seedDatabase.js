@@ -462,31 +462,71 @@ const seedDatabase = async () => {
     const createdRubrics = await Rubric.insertMany(rubrics);
     console.log(`✅ ${createdRubrics.length} rúbricas creadas\n`);
 
-    // 7. Crear usuario super-admin (sin university_id)
-    console.log('👤 Creando usuario super-administrador...');
-    const adminUser = new User({
-      username: 'admin',
+    // 7. Crear usuarios de prueba para cada rol
+    console.log('👥 Creando usuarios de prueba para todos los roles...\n');
+
+    const users = [];
+
+    // 7.1. Super Admin (sin university_id)
+    const superAdmin = new User({
+      username: 'superadmin',
       name: 'Super Administrador',
-      password: 'admin123', // Se hasheará automáticamente en el pre-save hook
+      password: 'admin123',
       role: 'super-admin',
       university_id: null, // Super-admin no necesita universidad
       deleted: false,
     });
-    await adminUser.save();
-    console.log('✅ Usuario super-admin creado (username: admin, password: admin123)\n');
+    await superAdmin.save();
+    users.push(superAdmin);
+    console.log('   ✅ super-admin: superadmin / admin123 (acceso global)');
 
-    // 8. Crear usuario de prueba (con university_id)
-    console.log('👤 Creando usuario de prueba...');
-    const testUser = new User({
-      username: 'usuario',
-      name: 'Usuario de Prueba',
-      password: 'usuario123',
-      role: 'user',
-      university_id: 'utn', // Usuario regular necesita universidad
+    // 7.2. University Admin (con university_id)
+    const universityAdmin = new User({
+      username: 'admin-utn',
+      name: 'Administrador UTN',
+      password: 'admin123',
+      role: 'university-admin',
+      university_id: 'utn',
       deleted: false,
     });
-    await testUser.save();
-    console.log('✅ Usuario de prueba creado (username: usuario, password: usuario123)\n');
+    await universityAdmin.save();
+    users.push(universityAdmin);
+    console.log('   ✅ university-admin: admin-utn / admin123 (gestiona UTN)');
+
+    // 7.3. Professor (con university_id)
+    const professor = new User({
+      username: 'prof-garcia',
+      name: 'María García',
+      password: 'prof123',
+      role: 'professor',
+      university_id: 'utn',
+      deleted: false,
+    });
+    await professor.save();
+    users.push(professor);
+    console.log('   ✅ professor: prof-garcia / prof123 (gestiona sus comisiones)');
+
+    // 7.4. User (con university_id)
+    const regularUser = new User({
+      username: 'usuario',
+      name: 'Usuario Regular',
+      password: 'usuario123',
+      role: 'user',
+      university_id: 'utn',
+      deleted: false,
+    });
+    await regularUser.save();
+    users.push(regularUser);
+    console.log('   ✅ user: usuario / usuario123 (solo corrección)\n');
+
+    // 7.5. Asignar profesor a algunas comisiones de FRM
+    console.log('👨‍🏫 Asignando profesor a comisiones...');
+    const frmCommissions = createdCommissions.filter(c => c.faculty_id === 'frm').slice(0, 3);
+    for (const commission of frmCommissions) {
+      await commission.assignProfessor(professor._id);
+      console.log(`   ✅ Prof. García asignado a: ${commission.name} (${commission.commission_id})`);
+    }
+    console.log('');
 
     // Resumen
     console.log('='.repeat(80));
@@ -499,14 +539,16 @@ const seedDatabase = async () => {
     console.log(`   - Cursos: ${createdCourses.length}`);
     console.log(`   - Comisiones: ${createdCommissions.length}`);
     console.log(`   - Rúbricas: ${createdRubrics.length}`);
-    console.log(`   - Usuarios: 2 (admin + usuario)`);
+    console.log(`   - Usuarios: ${users.length} (super-admin, university-admin, professor, user)`);
     console.log('='.repeat(80));
     console.log('\n📖 Estructura Jerárquica:');
     console.log('   Universidad → Facultad → Carrera → Materia (con año) → Comisión → Rúbrica (con tipo)');
     console.log('='.repeat(80));
     console.log('\n🔐 Credenciales de acceso:');
-    console.log('   Admin:   username: admin    | password: admin123');
-    console.log('   Usuario: username: usuario  | password: usuario123');
+    console.log('   Super Admin:      superadmin  / admin123    (acceso global)');
+    console.log('   University Admin: admin-utn   / admin123    (gestiona UTN)');
+    console.log('   Professor:        prof-garcia / prof123     (3 comisiones asignadas)');
+    console.log('   User:             usuario     / usuario123  (solo corrección)');
     console.log('='.repeat(80));
   } catch (error) {
     console.error('❌ Error en migración:', error);
