@@ -422,7 +422,7 @@ const seedDatabase = async () => {
     for (const commission of prog1Commissions) {
       const course = courses.find(c => c.course_id === commission.course_id);
       rubrics.push({
-        rubric_id: Rubric.generateRubricId(commission.commission_id, RUBRIC_TYPES.TP, 1),
+        rubric_id: Rubric.generateRubricId(commission.commission_id, RUBRIC_TYPES.TP, 'TP Listas', 1),
         name: 'TP Listas',
         commission_id: commission.commission_id,
         course_id: commission.course_id,
@@ -444,7 +444,7 @@ const seedDatabase = async () => {
     for (const commission of designCommissions) {
       const course = courses.find(c => c.course_id === commission.course_id);
       rubrics.push({
-        rubric_id: Rubric.generateRubricId(commission.commission_id, RUBRIC_TYPES.PARCIAL_1, 1),
+        rubric_id: Rubric.generateRubricId(commission.commission_id, RUBRIC_TYPES.PARCIAL_1, 'Parcial 1 - PythonForestal', 1),
         name: 'Parcial 1 - PythonForestal',
         commission_id: commission.commission_id,
         course_id: commission.course_id,
@@ -462,25 +462,27 @@ const seedDatabase = async () => {
     const createdRubrics = await Rubric.insertMany(rubrics);
     console.log(`✅ ${createdRubrics.length} rúbricas creadas\n`);
 
-    // 7. Crear usuario admin
-    console.log('👤 Creando usuario administrador...');
+    // 7. Crear usuario super-admin (sin university_id)
+    console.log('👤 Creando usuario super-administrador...');
     const adminUser = new User({
       username: 'admin',
-      name: 'Administrador',
+      name: 'Super Administrador',
       password: 'admin123', // Se hasheará automáticamente en el pre-save hook
-      role: 'admin',
+      role: 'super-admin',
+      university_id: null, // Super-admin no necesita universidad
       deleted: false,
     });
     await adminUser.save();
-    console.log('✅ Usuario admin creado (username: admin, password: admin123)\n');
+    console.log('✅ Usuario super-admin creado (username: admin, password: admin123)\n');
 
-    // 8. Crear usuario de prueba
+    // 8. Crear usuario de prueba (con university_id)
     console.log('👤 Creando usuario de prueba...');
     const testUser = new User({
       username: 'usuario',
       name: 'Usuario de Prueba',
       password: 'usuario123',
       role: 'user',
+      university_id: 'utn', // Usuario regular necesita universidad
       deleted: false,
     });
     await testUser.save();
