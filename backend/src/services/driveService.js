@@ -4,6 +4,8 @@
  * cuando se crean nuevas entidades en el sistema
  */
 import axios from 'axios';
+import FormData from 'form-data';
+import fs from 'fs';
 
 /**
  * Crear carpeta de Universidad en Google Drive
@@ -242,5 +244,60 @@ export const createSubmissionFolder = async (submit_id, commission_id, course_id
       success: false,
       message: error.response?.data?.message || error.message,
     };
+  }
+};
+
+/**
+ * Subir archivo a Google Drive (para entregas de alumnos)
+ * Usa webhook de n8n que recibe FormData con el archivo
+ * @param {String} filePath - Ruta del archivo temporal en el servidor
+ * @param {String} fileName - Nombre con el que se guardará en Drive (ej: "alumno-juan-perez.txt")
+ * @param {String} rubricDriveFolderId - ID de la carpeta de rúbrica en Drive
+ * @returns {Promise<Object>} { success, drive_file_id, drive_file_url }
+ */
+export const uploadFileToDrive = async (filePath, fileName, rubricDriveFolderId) => {
+  try {
+    const webhookUrl = process.env.N8N_UPLOAD_FILE_TO_DRIVE_WEBHOOK;
+
+    if (!webhookUrl) {
+      throw new Error('N8N_UPLOAD_FILE_TO_DRIVE_WEBHOOK no está configurado en .env');
+    }
+
+    console.log(`📤 Subiendo archivo a Drive: ${fileName} (carpeta: ${rubricDriveFolderId})`);
+
+    // Crear FormData con el archivo
+    const formData = new FormData();
+    formData.append('file', fs.createReadStream(filePath));
+    formData.append('fileName', fileName);
+    formData.append('folderId', rubricDriveFolderId);
+
+    // Enviar al webhook de n8n
+    const response = await axios.post(webhookUrl, formData, {
+      headers: {
+        ...formData.getHeaders(),
+      },
+      timeout: 60000, // 60 segundos para archivos grandes
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
+    });
+
+    console.log(`✅ Archivo subido a Drive: ${fileName}`);
+
+    // Validar respuesta
+    if (!response.data || !response.data.success) {
+      throw new Error('Respuesta inválida del webhook de n8n');
+    }
+
+    return {
+      success: true,
+      drive_file_id: response.data.drive_file_id,
+      drive_file_url: response.data.drive_file_url,
+    };
+  } catch (error) {
+    console.error(`❌ Error al subir archivo "${fileName}" a Drive:`, error.message);
+
+    throw new Error(
+      `Error al subir archivo a Google Drive: ${error.response?.data?.message || error.message}`
+    );
   }
 };
