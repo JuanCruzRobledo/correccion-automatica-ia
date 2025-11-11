@@ -13,6 +13,27 @@ Este documento detalla la refactorización del sistema de corrección automátic
 
 ---
 
+## ⚠️ TAREAS PENDIENTES
+
+### Pendientes de Implementación
+- **FASE 3**: Flujo n8n para Upload a Drive (webhook para subir archivos .txt a Google Drive)
+- **FASE 5**: Frontend - Vista de Profesor (ProfessorView con subida de entregas)
+- **FASE 7**: Routing y Navegación (rutas por rol, redirección en login)
+- **FASE 8**: Testing e Integración (testing end-to-end de todo el flujo)
+- **FASE 9**: Seed de datos multi-tenant
+- **FASE 10**: Documentación completa
+
+### Pendientes de Testing
+- **FASE 6**: Testing manual de UsersManager y CommissionsManager en navegador
+  - Crear usuarios con diferentes roles
+  - Asignar profesores a comisiones
+  - Validar filtros multi-tenant
+- **FASE 4**: Testing de tooltips en navegador
+- **FASE 2**: Testing de API de submissions con Postman
+- **FASE 1**: Testing de modelos y middleware con Postman
+
+---
+
 ## 🎯 Objetivos de la Refactorización
 
 ### Objetivos Principales
