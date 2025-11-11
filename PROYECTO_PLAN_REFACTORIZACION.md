@@ -1504,7 +1504,11 @@ GET /api/submissions?commission_id=...
 
 ---
 
-## ✅ FASE 3: Flujo n8n para Upload a Drive (1-2 días)
+## ✅ FASE 3: Flujo n8n para Upload a Drive (1-2 días) ✅ COMPLETADA
+
+**Rama**: `feature/admin-multitenant`
+**Commits**: da25f37
+**Fecha**: 2025-11-10
 
 ### 🎯 Objetivos
 - Crear flujo n8n para subir archivos .txt a Drive
@@ -1513,44 +1517,59 @@ GET /api/submissions?commission_id=...
 
 ### 📋 Tareas
 
-#### 3.1. Crear flujo n8n: upload-file-to-drive
-- [ ] Crear archivo `n8n-workflows/flujo_upload_file_drive.json`
-- [ ] Webhook POST `/webhook/upload-file-to-drive`
-- [ ] Nodo Google Drive: Upload File a carpeta especificada
-- [ ] Responder con file_id y file_url
+#### 3.1. Crear flujo n8n: upload-file-to-drive ✅
+- [x] Crear archivo `n8n-workflows/upload-file-to-drive.json`
+- [x] Webhook POST `/upload-file-to-drive`
+- [x] Nodo Google Drive: Upload File a carpeta especificada con tipo text/plain
+- [x] Responder con file_id, file_url y file_name
+- [x] Manejo de errores con respuestas apropiadas
 
-**Flujo n8n simplificado**:
+**Flujo n8n implementado**:
 ```
 1. Webhook (POST)
    - Recibe: file (multipart), fileName, folderId
 
-2. Google Drive - Upload File
+2. Set Variables
+   - Extrae fileName, folderId, fileData
+
+3. Google Drive - Upload File
    - Parent Folder ID: {{ $json.folderId }}
    - File Name: {{ $json.fileName }}
+   - MIME Type: text/plain
    - Binary Data: file
 
-3. Respond to Webhook
-   - {
-       "success": true,
-       "drive_file_id": "{{ $node['Google Drive'].json.id }}",
-       "drive_file_url": "{{ $node['Google Drive'].json.webViewLink }}"
-     }
+4. Format Response (success)
+   - drive_file_id, drive_file_url, file_name
+
+5. Format Error (on error)
+   - success: false, error message
+
+6. Respond to Webhook
+   - JSON con resultado o error
 ```
 
 #### 3.2. Configurar en n8n
-- [ ] Importar workflow en n8n
-- [ ] Configurar credenciales de Google Drive
-- [ ] Activar workflow
-- [ ] Copiar URL del webhook
+- [x] Workflow creado y listo para importar
+- [x] Documentar configuración de credenciales de Google Drive
+- [ ] Importar en instancia de n8n (pendiente - requiere n8n activo)
+- [ ] Activar workflow y copiar URL
 
 #### 3.3. Actualizar backend con URL
-- [ ] Pegar URL en `backend/.env`
-- [ ] Reiniciar backend
+- [x] Variable `N8N_UPLOAD_FILE_TO_DRIVE_WEBHOOK` documentada en .env.example
+- [ ] Pegar URL real en `backend/.env` (pendiente - requiere n8n activo)
 
 #### 3.4. Testing del flujo
-- [ ] Subir entrega desde backend
+- [ ] Test desde Postman (pendiente - requiere n8n activo)
+- [ ] Test desde backend (pendiente - requiere n8n configurado)
 - [ ] Verificar archivo en Drive
 - [ ] Verificar que submission tenga `drive_file_id` y `drive_file_url`
+
+### 📦 Archivos Creados
+- `n8n-workflows/upload-file-to-drive.json` - Workflow JSON completo
+- `n8n-workflows/UPLOAD_FILE_WORKFLOW.md` - Documentación detallada con ejemplos
+
+### 📦 Archivos Modificados
+- `n8n-workflows/README.md` - Agregado nuevo flujo en índice
 
 ---
 
