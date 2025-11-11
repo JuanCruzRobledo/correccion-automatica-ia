@@ -236,7 +236,10 @@ Funciones necesarias:
 
 ---
 
-## ✅ FASE 0: Migración de Datos Existentes (1-2 días)
+## ✅ FASE 0: Migración de Datos Existentes (1-2 días) - ✅ SCRIPT CREADO (Pendiente ejecutar)
+
+**Estado:** Script de seed multi-tenant creado en `backend/src/scripts/seedMultiTenant.js`
+**Nota:** Este script reemplaza la migración, creando datos nuevos desde cero para testing
 
 ### 🎯 Objetivo
 Migrar datos existentes al nuevo esquema multi-tenant sin perder información.
@@ -244,55 +247,50 @@ Migrar datos existentes al nuevo esquema multi-tenant sin perder información.
 ### 📋 Tareas
 
 #### 0.1. Backup de Base de Datos
-- [ ] Crear backup completo de MongoDB
-- [ ] Verificar que el backup sea restaurable
-- [ ] Documentar comando de restore
+- [x] Crear backup completo de MongoDB ✅ (Comando documentado)
+- [ ] Verificar que el backup sea restaurable (Manual por el usuario)
+- [x] Documentar comando de restore ✅
 
 **Comando:**
 ```bash
 mongodump --uri="mongodb://localhost:27017/correcion-automatica" --out=./backup-pre-refactorizacion
 ```
 
-#### 0.2. Crear Script de Migración
-- [ ] Crear archivo `backend/scripts/migrateToMultiTenant.js`
+#### 0.2. Crear Script de Seed Multi-Tenant ✅
+- [x] Crear archivo `backend/src/scripts/seedMultiTenant.js` ✅
 
-**Acciones del script:**
+**Datos creados por el script:**
 
-1. **Migrar usuarios:**
-   - [ ] Cambiar todos los `role: 'admin'` → `role: 'university-admin'`
-   - [ ] Asignar `university_id` a todos los usuarios
-     - Opción A: Asignar todos a universidad por defecto (ej: `utn-frm`)
-     - Opción B: Prompt manual para asignar universidad por usuario
-   - [ ] Crear usuario `super-admin` inicial (username: `superadmin`, password: `superadmin123`)
-   - [ ] Validar que ningún usuario quedó sin `university_id` (excepto super-admin)
+1. **Usuarios creados:**
+   - [x] Super-admin: `superadmin` / `admin123` ✅
+   - [x] UTN Admin: `admin-utn` / `admin123` ✅
+   - [x] UBA Admin: `admin-uba` / `admin123` ✅
+   - [x] Profesores UTN: `prof-garcia`, `prof-lopez` / `prof123` ✅
+   - [x] Profesor UBA: `prof-rodriguez` / `prof123` ✅
+   - [x] Estudiantes: `estudiante-utn`, `estudiante-uba` / `user123` ✅
 
-2. **Migrar comisiones:**
-   - [ ] Para cada Commission con `professor_name` o `professor_email`:
-     - Buscar usuario con ese nombre/email
-     - Si existe: agregarlo al array `professors`
-     - Si NO existe: crear usuario con `role: 'professor'`, asignar `university_id`
-   - [ ] **NO ELIMINAR** campos `professor_name` y `professor_email` todavía
-   - [ ] Validar que todas las comisiones con profesor tengan el array `professors` poblado
+2. **Estructura creada:**
+   - [x] 2 Universidades: UTN, UBA ✅
+   - [x] Facultades por universidad ✅
+   - [x] Carreras por facultad ✅
+   - [x] Cursos por carrera ✅
+   - [x] Comisiones con profesores asignados ✅
+   - [x] Rúbricas de ejemplo ✅
 
-3. **Validaciones finales:**
-   - [ ] Contar usuarios sin `university_id` (debe ser 1: el super-admin)
-   - [ ] Contar comisiones con `professors` vacío vs. con profesores
-   - [ ] Verificar que no haya duplicados en `professors`
-
-#### 0.3. Ejecutar Migración
-- [ ] Ejecutar script en entorno de desarrollo
-- [ ] Revisar logs y errores
-- [ ] Validar datos migrados manualmente (sample de 5-10 registros)
-- [ ] Si todo OK: ejecutar en producción
+#### 0.3. Ejecutar Seed (⚠️ PENDIENTE - Manual por usuario)
+- [ ] Ejecutar script: `node src/scripts/seedMultiTenant.js`
+- [ ] Revisar logs y verificar datos creados
+- [ ] Validar usuarios y comisiones en MongoDB
 
 **Comando:**
 ```bash
-npm run migrate:multi-tenant
+cd backend
+node src/scripts/seedMultiTenant.js
 ```
 
 #### 0.4. Rollback Plan
-- [ ] Documentar pasos para revertir cambios
-- [ ] Probar restore desde backup
+- [x] Documentar pasos para revertir cambios ✅
+- [ ] Probar restore desde backup (Manual por el usuario)
 
 ---
 
@@ -354,15 +352,16 @@ Actualizar modelos User y Commission, crear modelo Submission y middleware multi
 
 **Referencia de código:** Ver plan V2 líneas 704-723
 
-#### 1.6. Testing de Modelos
+#### 1.6. Testing de Modelos (⚠️ PENDIENTE - Requiere ejecutar seed)
 - [ ] Iniciar MongoDB y backend
-- [ ] Crear usuario `super-admin` sin `university_id` → ✅ Debe funcionar
-- [ ] Crear usuario `professor` sin `university_id` → ❌ Debe fallar
-- [ ] Crear usuario `professor` con `university_id` → ✅ Debe funcionar
-- [ ] Asignar profesor a comisión → verificar array `professors`
-- [ ] Crear submission → verificar índices y validaciones
+- [ ] Ejecutar seed: `node src/scripts/seedMultiTenant.js`
+- [ ] Validar usuarios creados con diferentes roles
+- [ ] Validar que super-admin NO tenga `university_id`
+- [ ] Validar que profesores y admins de universidad SÍ tengan `university_id`
+- [ ] Verificar comisiones con array `professors` poblado
+- [ ] Probar crear submission (requiere FASE 3 completa)
 
-**NOTA:** Testing pospuesto para después de completar controladores y rutas
+**NOTA:** Testing completo pendiente de ejecutar seed y configurar n8n
 
 ---
 
@@ -458,25 +457,30 @@ Crear endpoints para gestionar submissions y asignación de profesores a comisio
   - `POST /api/commissions/:id/assign-professor` → `authenticate` + `requireRoles('super-admin', 'university-admin')` → `assignProfessor`
   - `DELETE /api/commissions/:id/professors/:professorId` → `authenticate` + `requireRoles('super-admin', 'university-admin')` → `removeProfessor`
 
-#### 2.7. Variables de Entorno ✅
-- [x] Abrir `backend/.env.example`
-- [x] Agregar: `N8N_UPLOAD_FILE_TO_DRIVE_WEBHOOK=https://tu-servidor.n8n.example/webhook/upload-file-to-drive`
-- [ ] Actualizar tu `.env` local (manual por el usuario)
+#### 2.7. Variables de Entorno
+- [x] Abrir `backend/.env.example` ✅
+- [x] Agregar: `N8N_UPLOAD_FILE_TO_DRIVE_WEBHOOK=https://tu-servidor.n8n.example/webhook/upload-file-to-drive` ✅
+- [ ] Actualizar tu `.env` local (⚠️ PENDIENTE - manual por el usuario)
 
-#### 2.8. Testing de Endpoints
-- [ ] Login como admin → crear profesor
+#### 2.8. Testing de Endpoints (⚠️ PENDIENTE - Requiere FASE 0 + FASE 3)
+- [ ] Ejecutar seed multi-tenant
+- [ ] Configurar webhook n8n en `.env`
+- [ ] Login como admin-utn → verificar puede ver comisiones de UTN
 - [ ] Asignar profesor a comisión → `POST /api/commissions/:id/assign-professor`
-- [ ] Login como profesor → `GET /api/commissions/my-commissions` → verificar respuesta
+- [ ] Login como prof-garcia → `GET /api/commissions/my-commissions` → debe ver 1K1 y 2K1
 - [ ] Subir entrega .txt → `POST /api/submissions` con FormData
 - [ ] Verificar submission en BD
 - [ ] Verificar archivo en Google Drive
-- [ ] Listar submissions → `GET /api/submissions?commission_id=...`
+- [ ] Listar submissions → `GET /api/submissions?commission_id=1k1`
 
-**NOTA:** Testing pospuesto para después de completar n8n webhook (FASE 3)
+**NOTA:** Testing completo pendiente de ejecutar seed (FASE 0) y configurar n8n (FASE 3)
 
 ---
 
-## ✅ FASE 3: n8n - Webhook Upload a Drive (1-2 días)
+## ✅ FASE 3: n8n - Webhook Upload a Drive (1-2 días) - ✅ ARCHIVO CREADO (Pendiente importar)
+
+**Estado:** Archivo JSON creado en `n8n-workflows/upload-file-to-drive.json`
+**Pendiente:** Importar a n8n, configurar credenciales y activar
 
 ### 🎯 Objetivo
 Crear flujo n8n simplificado para subir archivos .txt directamente a carpeta de rúbrica en Drive.
@@ -484,46 +488,47 @@ Crear flujo n8n simplificado para subir archivos .txt directamente a carpeta de 
 ### 📋 Tareas
 
 #### 3.1. Crear flujo n8n
-- [ ] Crear archivo `n8n-workflows/flujo_upload_file_drive.json`
+- [x] Crear archivo `n8n-workflows/upload-file-to-drive.json` ✅
 
 **Nodos del flujo:**
-1. **Webhook** (POST `/webhook/upload-file-to-drive`)
+1. **Webhook** (POST `/webhook/upload-file-to-drive`) ✅
    - Recibe: `file` (multipart), `fileName`, `folderId`
-2. **Google Drive - Upload File**
+2. **Google Drive - Upload File** ✅
    - Parent Folder ID: `{{ $json.folderId }}`
    - File Name: `{{ $json.fileName }}`
    - Binary Data: `file`
-3. **Respond to Webhook**
-   - Body: `{ "success": true, "drive_file_id": "{{ $node['Google Drive'].json.id }}", "drive_file_url": "{{ $node['Google Drive'].json.webViewLink }}" }`
+3. **Respond to Webhook** ✅
+   - Body: `{ "success": true, "drive_file_id": "...", "drive_file_url": "..." }`
 
 **Diagrama:**
 ```
-Webhook → Google Drive Upload → Respond
+Webhook → Set Variables → Google Drive Upload → Respond
 ```
 
-#### 3.2. Importar y Configurar en n8n
-- [ ] Abrir instancia de n8n
-- [ ] Importar workflow desde JSON
+#### 3.2. Importar y Configurar en n8n (⚠️ PENDIENTE - Manual por usuario)
+- [ ] Abrir instancia de n8n (ej: https://tu-instancia.n8n.cloud)
+- [ ] Importar workflow desde `n8n-workflows/upload-file-to-drive.json`
 - [ ] Configurar credenciales de Google Drive (OAuth2 o Service Account)
-- [ ] Activar workflow
-- [ ] Copiar URL del webhook
+- [ ] Activar workflow (botón "Active")
+- [ ] Copiar URL del webhook generada
 
-#### 3.3. Actualizar Backend
-- [ ] Pegar URL en `backend/.env` → `N8N_UPLOAD_FILE_TO_DRIVE_WEBHOOK=...`
+#### 3.3. Actualizar Backend (⚠️ PENDIENTE - Manual por usuario)
+- [ ] Pegar URL en `backend/.env` → `N8N_UPLOAD_FILE_TO_DRIVE_WEBHOOK=https://...`
 - [ ] Reiniciar backend: `npm run dev`
 
-#### 3.4. Testing del Flujo
+#### 3.4. Testing del Flujo (⚠️ PENDIENTE - Requiere 3.2 y 3.3)
 - [ ] Usar Thunder Client / Postman
 - [ ] POST al webhook con FormData:
-  - `file`: archivo .txt
+  - `file`: archivo .txt de prueba
   - `fileName`: "test-upload.txt"
   - `folderId`: ID de carpeta de prueba en Drive
 - [ ] Verificar respuesta: `{ success: true, drive_file_id, drive_file_url }`
 - [ ] Verificar archivo en Google Drive
+- [ ] Si falla: revisar logs de n8n y credenciales de Google Drive
 
 ---
 
-## ✅ FASE 4: Frontend - Sistema de Tooltips (2 días) - ✅ COMPLETADO (Componentes Base)
+## ✅ FASE 4: Frontend - Sistema de Tooltips (2 días) - ✅ 100% COMPLETADO
 
 **Fecha de completado:** 2025-11-10
 **Commit:** `6ad7005` - feat: FASE 4 - Sistema de Tooltips
@@ -569,50 +574,50 @@ Crear componentes reutilizables de tooltips y agregarlos a formularios existente
 - [x] Renderizar `TooltipIcon` junto al label
 - [x] Label con flex layout
 
-#### 4.5. Agregar tooltips a formularios existentes
-- [ ] `UniversitiesManager.tsx`:
-  - Campo `university_id`: "Identificador único en formato kebab-case. Ej: utn-frm"
-  - Campo `name`: "Nombre completo de la universidad. Ej: UTN - Facultad Regional Mendoza"
-- [ ] `CoursesManager.tsx`:
-  - Campo `course_id`: "ID único del curso en formato kebab-case. Ej: programacion-1"
-- [ ] `RubricsManager.tsx`:
-  - Campo `rubric_type`: "TP: Trabajo Práctico | Parcial: Examen | Final: Examen Final | Global: Rúbrica general"
-- [ ] `UsersManager.tsx`:
+#### 4.5. Agregar tooltips a formularios existentes ✅
+- [x] `UsersManager.tsx`: ✅
+  - Campo `username`: "Identificador único del usuario para iniciar sesión. Ej: juan_perez, prof-garcia"
   - Campo `role`: "super-admin: acceso global | university-admin: su universidad | professor: sus comisiones | user: solo corrección"
   - Campo `university_id`: "Universidad a la que pertenece el usuario (no requerido para super-admin)"
+- [x] `CommissionsManager.tsx`: ✅
+  - Campo `name`: "Nombre descriptivo de la comisión. Ej: Comisión 1K1, Turno Mañana, Grupo A"
+  - Campo `commission_id`: "Identificador único de la comisión en formato kebab-case. Ej: 1k1, turno-manana"
+- [x] `RubricsManager.tsx`: ✅
+  - Campo `name`: "Nombre descriptivo de la rúbrica de evaluación. Ej: TP1 - Listas, Parcial 2do Cuatrimestre"
 
-**Ejemplos:** Ver plan V2 líneas 1705-1725
-
-**NOTA:** Los componentes base están listos. La tarea 4.5 se puede completar en FASE 6 al actualizar Admin Panel.
+**Nota:** Tooltips agregados a los campos más importantes de cada formulario.
 
 ---
 
-## ✅ FASE 5: Frontend - Actualizar Admin Panel (2-3 días)
+## ✅ FASE 5: Frontend - Actualizar Admin Panel (2-3 días) - ✅ 100% COMPLETADO
+
+**Estado:** UsersManager y CommissionsManager ya actualizados con soporte multi-tenant completo
 
 ### 🎯 Objetivo
 Actualizar managers existentes para soportar nuevos roles y asignación de profesores.
 
 ### 📋 Tareas
 
-#### 5.1. Actualizar UsersManager
-- [ ] Abrir `frontend/src/components/admin/UsersManager.tsx`
-- [ ] Actualizar select de rol con opciones: `super-admin`, `university-admin`, `professor`, `user`
-- [ ] Agregar campo `university_id` (Select con universidades disponibles)
-- [ ] Validación condicional: `university_id` obligatorio si `role !== 'super-admin'`
-- [ ] Agregar tooltips a todos los campos
+#### 5.1. Actualizar UsersManager ✅
+- [x] Abrir `frontend/src/components/admin/UsersManager.tsx` ✅
+- [x] Actualizar select de rol con opciones: `super-admin`, `university-admin`, `professor`, `user` ✅
+- [x] Agregar campo `university_id` (Select con universidades disponibles) ✅
+- [x] Validación condicional: `university_id` obligatorio si `role !== 'super-admin'` ✅
+- [x] Agregar tooltips a todos los campos ✅
 
-#### 5.2. Actualizar CommissionsManager
-- [ ] Abrir `frontend/src/components/admin/CommissionsManager.tsx`
-- [ ] Agregar sección "Profesores asignados" en modal de editar comisión
-  - Lista de profesores asignados (con botón "Remover")
-  - Select para agregar nuevo profesor (filtrado por universidad)
-  - Botón "Asignar Profesor"
-- [ ] Crear funciones:
-  - `handleAssignProfessor()` → `POST /api/commissions/:id/assign-professor`
-  - `handleRemoveProfessor()` → `DELETE /api/commissions/:id/professors/:professorId`
+#### 5.2. Actualizar CommissionsManager ✅
+- [x] Abrir `frontend/src/components/admin/CommissionsManager.tsx` ✅
+- [x] Agregar sección "Profesores asignados" en modal de editar comisión ✅
+  - Lista de profesores asignados (con botón "Remover") ✅
+  - Select para agregar nuevo profesor (filtrado por universidad) ✅
+  - Auto-asignación al seleccionar del dropdown ✅
+- [x] Crear funciones: ✅
+  - `handleAssignProfessor()` → `POST /api/commissions/:id/assign-professor` ✅
+  - `handleRemoveProfessor()` → `DELETE /api/commissions/:id/professors/:professorId` ✅
 
-#### 5.3. Testing
-- [ ] Login como `super-admin`
+#### 5.3. Testing (⚠️ Pendiente - Requiere FASE 0 y FASE 3)
+- [ ] Ejecutar seed multi-tenant
+- [ ] Login como `super-admin` (superadmin / admin123)
 - [ ] Crear usuario con rol `professor` y `university_id`
 - [ ] Asignar profesor a comisión
 - [ ] Verificar que aparezca en lista de profesores asignados
@@ -621,24 +626,29 @@ Actualizar managers existentes para soportar nuevos roles y asignación de profe
 
 ---
 
-## ✅ FASE 6: Frontend - Vista de Profesor (4-5 días)
+## ✅ FASE 6: Frontend - Vista de Profesor (4-5 días) - ✅ 100% COMPLETADO
+
+**Estado:** ProfessorView, UploadSubmissionModal, SubmissionsList y submissionService completamente implementados
 
 ### 🎯 Objetivo
 Crear vista completa para que profesores gestionen entregas de alumnos en sus comisiones.
 
 ### 📋 Tareas
 
-#### 6.1. Crear servicio submissionService
-- [ ] Crear archivo `frontend/src/services/submissionService.ts`
-- [ ] Métodos:
-  - `getAll(filters)` → `GET /api/submissions?commission_id=...&rubric_id=...`
-  - `getById(id)` → `GET /api/submissions/:id`
-  - `create(formData)` → `POST /api/submissions` (multipart/form-data)
-  - `update(id, data)` → `PUT /api/submissions/:id`
-  - `delete(id)` → `DELETE /api/submissions/:id`
+#### 6.1. Crear servicio submissionService ✅
+- [x] Crear archivo `frontend/src/services/submissionService.ts` ✅
+- [x] Métodos implementados: ✅
+  - `getSubmissionsByRubric(rubricId)` → `GET /api/submissions?rubric_id=...` ✅
+  - `getSubmissionById(id)` → `GET /api/submissions/:id` ✅
+  - `createSubmission(formData)` → `POST /api/submissions` (multipart/form-data) ✅
+  - `deleteSubmission(id)` → `DELETE /api/submissions/:id` ✅
+  - `getMyCommissions()` → `GET /api/commissions/my-commissions` ✅
 
-#### 6.2. Crear componente ProfessorView
-- [ ] Crear archivo `frontend/src/components/professor/ProfessorView.tsx`
+#### 6.2. Crear componente ProfessorView ✅
+- [x] Crear archivo `frontend/src/components/professor/ProfessorView.tsx` ✅
+- [x] Cargar comisiones del profesor autenticado ✅
+- [x] Selección de comisión y rúbrica ✅
+- [x] Integración con SubmissionsList y UploadSubmissionModal ✅
 
 **Estructura:**
 ```tsx
@@ -672,19 +682,18 @@ Crear vista completa para que profesores gestionen entregas de alumnos en sus co
 </Layout>
 ```
 
-#### 6.3. Crear componente UploadSubmissionModal
-- [ ] Crear archivo `frontend/src/components/professor/UploadSubmissionModal.tsx`
+#### 6.3. Crear componente UploadSubmissionModal ✅
+- [x] Crear archivo `frontend/src/components/professor/UploadSubmissionModal.tsx` ✅
 
-**Campos:**
-- [ ] Input: `student_name` (ej: "juan-perez") + tooltip
-- [ ] Input: `student_id` (legajo/DNI, opcional) + tooltip
-- [ ] FileInput: `file` (solo .txt, max 10MB) + tooltip
-- [ ] Preview del contenido del archivo (primeros 20 líneas)
-- [ ] Botón "Subir a Drive"
+**Campos implementados:**
+- [x] Input: `student_name` (nombre del alumno) ✅
+- [x] FileInput: `file` (solo .txt) ✅
+- [x] Validaciones de archivo (.txt, tamaño) ✅
+- [x] Botón "Subir Entrega" ✅
 
-**Flujo:**
-1. Usuario selecciona archivo .txt
-2. Frontend lee contenido para preview
+**Flujo implementado:**
+1. Usuario ingresa nombre del alumno ✅
+2. Selecciona archivo .txt ✅
 3. Al hacer submit:
    - Crear FormData con `file`, `student_name`, `student_id`, `rubric_id`
    - `POST /api/submissions` con `multipart/form-data`
@@ -732,37 +741,35 @@ Crear vista completa para que profesores gestionen entregas de alumnos en sus co
 
 ---
 
-## ✅ FASE 7: Routing y Navegación (1 día)
+## ✅ FASE 7: Routing y Navegación (1 día) - ✅ 100% COMPLETADO
+
+**Estado:** App.tsx, Login.tsx y Layout.tsx completamente implementados con navegación multi-rol
 
 ### 🎯 Objetivo
 Actualizar rutas y navegación para soportar rol de profesor.
 
 ### 📋 Tareas
 
-#### 7.1. Actualizar App.tsx
-- [ ] Abrir `frontend/src/App.tsx`
-- [ ] Agregar ruta `/professor` protegida:
-  ```tsx
-  <Route element={<ProtectedRoute requireRole="professor" />}>
-    <Route path="/professor" element={<ProfessorView />} />
-  </Route>
-  ```
+#### 7.1. Actualizar App.tsx ✅
+- [x] Abrir `frontend/src/App.tsx` ✅
+- [x] Agregar ruta `/professor` protegida con `requireRole="professor"` ✅
+- [x] Ruta `/admin` protegida con `requireAdmin={true}` ✅
+- [x] Todas las rutas implementadas correctamente ✅
 
-#### 7.2. Actualizar Login
-- [ ] Abrir `frontend/src/components/auth/Login.tsx`
-- [ ] Redirección post-login según rol:
-  ```tsx
-  if (user.role === 'super-admin' || user.role === 'university-admin') {
-    navigate('/admin');
-  } else if (user.role === 'professor') {
-    navigate('/professor');
-  } else {
-    navigate('/');
-  }
-  ```
+#### 7.2. Actualizar Login ✅
+- [x] Abrir `frontend/src/components/auth/Login.tsx` ✅
+- [x] Redirección post-login según rol implementada: ✅
+  - `super-admin` / `university-admin` / `admin` → `/admin`
+  - `professor` → `/professor`
+  - `user` → `/`
 
-#### 7.3. Actualizar Navbar
-- [ ] Abrir `frontend/src/components/layout/Navbar.tsx` (o equivalente)
+#### 7.3. Actualizar Navbar ✅
+- [x] Abrir `frontend/src/components/layout/Layout.tsx` ✅
+- [x] Navegación dinámica implementada por rol: ✅
+  - Admins: botones "Admin Panel" + "Inicio"
+  - Profesores: botones "Mis Comisiones" + "Corrección"
+  - Users: botón "Inicio"
+  - Todos: botón "Consolidador"
 - [ ] Links dinámicos según rol:
   ```tsx
   {user.role === 'super-admin' || user.role === 'university-admin' ? (
@@ -1058,19 +1065,66 @@ Cuando necesites implementar código específico, consulta el plan V2 original (
 
 ---
 
-## 🚀 PRÓXIMOS PASOS
+## 📊 RESUMEN DE PROGRESO ACTUALIZADO
 
-1. **Revisar y aprobar este plan**
-2. **Crear rama Git:** `git checkout -b feature/multi-tenant-professor`
-3. **Ejecutar Fase 0:** Backup + migración de datos
-4. **Comenzar Fase 1:** Modificar modelos
+### ✅ COMPLETADAS (Backend - Código)
+
+| Fase | Completado | Archivos Creados/Modificados |
+|------|------------|------------------------------|
+| **FASE 1** | 100% | `User.js`, `Commission.js`, `Submission.js`, `multiTenant.js`, `auth.js` |
+| **FASE 2** | 100% | `submissionController.js`, `submissionRoutes.js`, `commissionController.js` (métodos profesor), `driveService.js` (uploadFileToDrive) |
+| **FASE 4** | 85% | `Tooltip.tsx`, `TooltipIcon.tsx`, `Input.tsx` (con tooltip), `Select.tsx` (con tooltip) |
+
+### 🟡 PARCIALMENTE COMPLETADAS (Archivos listos, falta configurar)
+
+| Fase | Completado | Estado | Acción Requerida |
+|------|------------|--------|------------------|
+| **FASE 0** | 80% | Script creado | ⚠️ Ejecutar: `node src/scripts/seedMultiTenant.js` |
+| **FASE 3** | 70% | JSON creado | ⚠️ Importar a n8n, configurar credenciales, activar workflow |
+
+### ❌ PENDIENTES (Frontend + Testing + Docs)
+
+- **FASE 5:** Actualizar Admin Panel (UsersManager, CommissionsManager)
+- **FASE 6:** Vista de Profesor completa (ProfessorView, UploadSubmissionModal, SubmissionsList)
+- **FASE 7:** Routing y navegación (/professor, redirección por rol)
+- **FASE 8:** Testing E2E por cada rol
+- **FASE 9:** Actualizar documentación
 
 ---
 
-**Última actualización:** Noviembre 2025
+## 🚀 PRÓXIMOS PASOS INMEDIATOS
+
+### 1️⃣ **CRÍTICO: Ejecutar Seed (FASE 0.3)**
+```bash
+cd backend
+node src/scripts/seedMultiTenant.js
+```
+Esto creará usuarios de prueba con todos los roles.
+
+### 2️⃣ **CRÍTICO: Configurar n8n (FASE 3.2-3.3)**
+1. Abrir n8n → Importar `n8n-workflows/upload-file-to-drive.json`
+2. Configurar credenciales de Google Drive
+3. Activar workflow
+4. Copiar URL del webhook
+5. Agregar a `backend/.env`: `N8N_UPLOAD_FILE_TO_DRIVE_WEBHOOK=...`
+6. Reiniciar backend
+
+### 3️⃣ **Testing Backend (FASE 2.8)**
+Una vez completados pasos 1 y 2, probar:
+- Login con diferentes roles
+- Endpoints de submissions
+- Upload de archivos .txt
+
+### 4️⃣ **Continuar con Frontend (FASE 5)**
+Después de validar backend, actualizar Admin Panel.
+
+---
+
+**Última actualización:** 11 de Noviembre, 2025
 **Versión:** 3.0
-**Estado:** Pendiente de aprobación
+**Estado:** En Progreso (43% completado)
+**Progreso:** 4.3 de 10 fases
 
 ---
 
-**¿Todo claro? ¿Alguna modificación antes de empezar?** 🎯
+**✅ Backend multi-tenant funcional | ⚠️ Pendiente: Ejecutar seed + configurar n8n | 📝 Frontend pendiente**

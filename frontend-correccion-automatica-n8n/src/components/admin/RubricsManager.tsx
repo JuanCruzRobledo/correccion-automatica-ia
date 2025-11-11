@@ -818,6 +818,7 @@ export const RubricsManager = () => {
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             error={formErrors.name}
             disabled={modalMode === 'view'}
+            tooltip="Nombre descriptivo de la rúbrica de evaluación. Ej: TP1 - Listas, Parcial 2do Cuatrimestre"
           />
 
           <div>

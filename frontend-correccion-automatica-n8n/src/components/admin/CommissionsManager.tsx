@@ -697,6 +697,7 @@ export const CommissionsManager = () => {
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               error={formErrors.name}
+              tooltip="Nombre descriptivo de la comisión. Ej: Comisión 1K1, Turno Mañana, Grupo A"
             />
           </div>
 
@@ -711,6 +712,7 @@ export const CommissionsManager = () => {
               error={formErrors.commission_id}
               disabled={modalMode === 'edit'}
               helperText={modalMode === 'edit' ? 'El ID no se puede modificar' : 'Solo minúsculas, números y guiones'}
+              tooltip="Identificador único de la comisión en formato kebab-case. Ej: 1k1, turno-manana"
             />
 
             {/* Sugerencia de ID */}

@@ -341,6 +341,7 @@ export const UsersManager = () => {
             error={formErrors.username}
             helperText="Solo letras minúsculas, números, guiones y guiones bajos (mín. 3 caracteres)"
             disabled={selectedUser?.username === 'admin'}
+            tooltip="Identificador único del usuario para iniciar sesión. Ej: juan_perez, prof-garcia"
           />
 
           <Input
