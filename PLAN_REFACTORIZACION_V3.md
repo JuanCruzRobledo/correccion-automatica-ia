@@ -366,24 +366,28 @@ Actualizar modelos User y Commission, crear modelo Submission y middleware multi
 
 ---
 
-## ✅ FASE 2: Backend - Controladores y Rutas (3-5 días)
+## ✅ FASE 2: Backend - Controladores y Rutas (3-5 días) - ✅ COMPLETADO (Parte 1/2)
+
+**Fecha de completado:** 2025-11-10
+**Commit:** `56b8456` - feat: FASE 2 - API de Submissions completa
+**Rama:** `feature/submissions-api`
 
 ### 🎯 Objetivo
 Crear endpoints para gestionar submissions y asignación de profesores a comisiones.
 
 ### 📋 Tareas
 
-#### 2.1. Crear controlador de Submissions
-- [ ] Crear archivo `backend/src/controllers/submissionController.js`
+#### 2.1. Crear controlador de Submissions ✅
+- [x] Crear archivo `backend/src/controllers/submissionController.js`
 
 **Funciones a implementar:**
-- [ ] `getAllSubmissions(req, res)` - Listar con filtros multi-tenant
+- [x] `getAllSubmissions(req, res)` - Listar con filtros multi-tenant
   - super-admin: ve todo
   - university-admin: solo su universidad
   - professor: solo sus comisiones
   - user: rechazar acceso
-- [ ] `getSubmissionById(req, res)` - Obtener una con validación de acceso
-- [ ] `createSubmission(req, res)` - Subir archivo .txt con Multer
+- [x] `getSubmissionById(req, res)` - Obtener una con validación de acceso
+- [x] `createSubmission(req, res)` - Subir archivo .txt con Multer
   - Validar profesor tiene acceso a comisión
   - Obtener `drive_folder_id` de rúbrica
   - Generar nombre de archivo: `alumno-{student_name}.txt`
@@ -391,35 +395,38 @@ Crear endpoints para gestionar submissions y asignación de profesores a comisio
   - Llamar a `uploadFileToDrive()` del driveService
   - Crear registro Submission en BD
   - Eliminar archivo temporal
-- [ ] `updateSubmission(req, res)` - Actualizar estado o corrección
-- [ ] `deleteSubmission(req, res)` - Soft delete
+- [x] `updateSubmission(req, res)` - Actualizar estado o corrección
+- [x] `deleteSubmission(req, res)` - Soft delete
 
 **Referencia de código:** Ver plan V2 líneas 770-1101
 
-#### 2.2. Actualizar driveService
-- [ ] Abrir `backend/src/services/driveService.js`
-- [ ] Agregar función `uploadFileToDrive(filePath, fileName, rubricDriveFolderId)`
+#### 2.2. Actualizar driveService ✅
+- [x] Abrir `backend/src/services/driveService.js`
+- [x] Agregar imports: FormData, fs
+- [x] Agregar función `uploadFileToDrive(filePath, fileName, rubricDriveFolderId)`
   - Llama a webhook n8n con FormData
   - Retorna `{ success, drive_file_id, drive_file_url }`
 
 **Referencia de código:** Ver plan V2 líneas 1109-1157
 
-#### 2.3. Crear rutas de Submissions
-- [ ] Crear archivo `backend/src/routes/submissionRoutes.js`
-- [ ] Configurar Multer para upload de .txt (destino: `uploads/temp/`, max 10MB)
-- [ ] Rutas:
-  - `GET /api/submissions` → `authenticate` → `getAllSubmissions`
-  - `GET /api/submissions/:id` → `authenticate` → `getSubmissionById`
-  - `POST /api/submissions` → `authenticate` + `requireRoles('professor', 'university-admin', 'super-admin')` + `checkProfessorAccess` + `upload.single('file')` → `createSubmission`
+#### 2.3. Crear rutas de Submissions ✅
+- [x] Crear archivo `backend/src/routes/submissionRoutes.js`
+- [x] Configurar Multer para upload de .txt (destino: `uploads/temp/`, max 10MB)
+- [x] Rutas:
+  - `GET /api/submissions` → `authenticate` + `requireRoles(...)` → `getAllSubmissions`
+  - `GET /api/submissions/:id` → `authenticate` + `requireRoles(...)` → `getSubmissionById`
+  - `POST /api/submissions` → `authenticate` + `requireRoles(...)` + `upload.single('file')` + `checkProfessorAccess` → `createSubmission`
   - `PUT /api/submissions/:id` → `authenticate` + `requireRoles(...)` → `updateSubmission`
   - `DELETE /api/submissions/:id` → `authenticate` + `requireRoles(...)` → `deleteSubmission`
 
 **Referencia de código:** Ver plan V2 líneas 1165-1224
 
-#### 2.4. Registrar rutas en app.js
-- [ ] Abrir `backend/src/app.js`
-- [ ] Importar `submissionRoutes`
-- [ ] Registrar: `app.use('/api/submissions', submissionRoutes)`
+#### 2.4. Registrar rutas en app.js ✅
+- [x] Abrir `backend/src/app.js`
+- [x] Importar `submissionRoutes`
+- [x] Registrar: `app.use('/api/submissions', submissionRoutes)`
+- [x] Actualizar versión a 2.3.0
+- [x] Agregar endpoint en lista de endpoints
 
 #### 2.5. Actualizar controlador de Commission
 - [ ] Abrir `backend/src/controllers/commissionController.js`
