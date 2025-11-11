@@ -366,11 +366,13 @@ Actualizar modelos User y Commission, crear modelo Submission y middleware multi
 
 ---
 
-## ✅ FASE 2: Backend - Controladores y Rutas (3-5 días) - ✅ COMPLETADO (Parte 1/2)
+## ✅ FASE 2: Backend - Controladores y Rutas (3-5 días) - ✅ COMPLETADO
 
 **Fecha de completado:** 2025-11-10
-**Commit:** `56b8456` - feat: FASE 2 - API de Submissions completa
-**Rama:** `feature/submissions-api`
+**Commits:**
+- `56b8456` - feat: FASE 2 - API de Submissions completa
+- `060064c` - feat: FASE 2 Parte 2 - Asignación de Profesores a Comisiones
+**Ramas:** `feature/submissions-api`, `feature/professor-assignment`
 
 ### 🎯 Objetivo
 Crear endpoints para gestionar submissions y asignación de profesores a comisiones.
@@ -428,27 +430,38 @@ Crear endpoints para gestionar submissions y asignación de profesores a comisio
 - [x] Actualizar versión a 2.3.0
 - [x] Agregar endpoint en lista de endpoints
 
-#### 2.5. Actualizar controlador de Commission
-- [ ] Abrir `backend/src/controllers/commissionController.js`
-- [ ] Agregar función `assignProfessor(req, res)`
+#### 2.5. Actualizar controlador de Commission ✅
+- [x] Abrir `backend/src/controllers/commissionController.js`
+- [x] Agregar import de User model
+- [x] Agregar función `assignProfessor(req, res)`
   - Validar que profesor exista y sea de la misma universidad
+  - Validar rol de profesor
+  - Validar multi-tenant
   - Llamar a `commission.assignProfessor(professor_id)`
-- [ ] Agregar función `removeProfessor(req, res)`
-- [ ] Agregar función `getMyCommissions(req, res)` - Para profesores
+  - Populate de profesores en respuesta
+- [x] Agregar función `removeProfessor(req, res)`
+  - Validar multi-tenant
+  - Llamar a `commission.removeProfessor(professorId)`
+- [x] Agregar función `getMyCommissions(req, res)` - Para profesores
+  - Validar rol profesor
+  - Usar método `findByProfessor()`
+- [x] Exportar nuevas funciones
 
 **Referencia de código:** Ver plan V2 líneas 1247-1394
 
-#### 2.6. Actualizar rutas de Commission
-- [ ] Abrir `backend/src/routes/commissionRoutes.js`
-- [ ] Agregar rutas:
+#### 2.6. Actualizar rutas de Commission ✅
+- [x] Abrir `backend/src/routes/commissionRoutes.js`
+- [x] Importar `assignProfessor`, `removeProfessor`, `getMyCommissions`
+- [x] Importar `requireRoles` de multiTenant middleware
+- [x] Agregar rutas:
   - `GET /api/commissions/my-commissions` → `authenticate` → `getMyCommissions` (ANTES de `/:id`)
   - `POST /api/commissions/:id/assign-professor` → `authenticate` + `requireRoles('super-admin', 'university-admin')` → `assignProfessor`
-  - `DELETE /api/commissions/:id/professors/:professorId` → `authenticate` + `requireRoles(...)` → `removeProfessor`
+  - `DELETE /api/commissions/:id/professors/:professorId` → `authenticate` + `requireRoles('super-admin', 'university-admin')` → `removeProfessor`
 
-#### 2.7. Variables de Entorno
-- [ ] Abrir `backend/.env.example`
-- [ ] Agregar: `N8N_UPLOAD_FILE_TO_DRIVE_WEBHOOK=https://tu-n8n.com/webhook/upload-file-to-drive`
-- [ ] Actualizar tu `.env` local
+#### 2.7. Variables de Entorno ✅
+- [x] Abrir `backend/.env.example`
+- [x] Agregar: `N8N_UPLOAD_FILE_TO_DRIVE_WEBHOOK=https://tu-servidor.n8n.example/webhook/upload-file-to-drive`
+- [ ] Actualizar tu `.env` local (manual por el usuario)
 
 #### 2.8. Testing de Endpoints
 - [ ] Login como admin → crear profesor
@@ -458,6 +471,8 @@ Crear endpoints para gestionar submissions y asignación de profesores a comisio
 - [ ] Verificar submission en BD
 - [ ] Verificar archivo en Google Drive
 - [ ] Listar submissions → `GET /api/submissions?commission_id=...`
+
+**NOTA:** Testing pospuesto para después de completar n8n webhook (FASE 3)
 
 ---
 
