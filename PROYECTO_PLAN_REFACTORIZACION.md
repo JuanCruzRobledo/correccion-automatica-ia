@@ -1754,7 +1754,11 @@ export const Input: React.FC<InputProps> = ({
 
 ---
 
-## ✅ FASE 5: Frontend - Vista de Profesor (3-4 días)
+## ✅ FASE 5: Frontend - Vista de Profesor (3-4 días) ✅ COMPLETADA
+
+**Rama**: `feature/admin-multitenant`
+**Commits**: c6972a0
+**Fecha**: 2025-11-10
 
 ### 🎯 Objetivos
 - Crear ProfessorView completo
@@ -1764,30 +1768,45 @@ export const Input: React.FC<InputProps> = ({
 
 ### 📋 Tareas
 
-#### 5.1. Crear componente ProfessorView
-- [ ] Crear archivo `frontend/src/components/professor/ProfessorView.tsx`
-- [ ] Layout: Sidebar con comisiones + Panel principal
+#### 5.1. Crear componente ProfessorView ✅
+- [x] Crear archivo `frontend/src/components/professor/ProfessorView.tsx`
+- [x] Layout: Sidebar con comisiones + Panel principal
+- [x] Auto-selección de primera comisión y rúbrica
+- [x] Selector de rúbricas por comisión
 
-#### 5.2. Crear servicio submissionService
-- [ ] Crear archivo `frontend/src/services/submissionService.ts`
-- [ ] Métodos: `getAll()`, `getById()`, `create()`, `delete()`
+#### 5.2. Crear servicio submissionService ✅
+- [x] Crear archivo `frontend/src/services/submissionService.ts`
+- [x] Métodos: `getSubmissionsByRubric()`, `getSubmissionById()`, `createSubmission()`, `deleteSubmission()`, `getMyCommissions()`
+- [x] Soporte para FormData en upload
 
-#### 5.3. Crear componente para subir entregas
-- [ ] Modal con formulario
-- [ ] Input file (.txt)
-- [ ] Preview del archivo
-- [ ] Tooltips en campos
+#### 5.3. Crear componente para subir entregas ✅
+- [x] Modal UploadSubmissionModal con formulario completo
+- [x] Input file (.txt) con validación
+- [x] Preview del archivo (primeros 500 caracteres)
+- [x] Tooltips en campos
+- [x] Generación automática de nombre en formato kebab-case
 
-#### 5.4. Crear componente para listar entregas
-- [ ] Tabla con entregas por rúbrica
-- [ ] Columnas: Alumno, Legajo, Archivo, Fecha, Estado
-- [ ] Acciones: Ver en Drive, Corregir, Eliminar
+#### 5.4. Crear componente para listar entregas ✅
+- [x] Tabla SubmissionsList con entregas por rúbrica
+- [x] Columnas: Alumno, Archivo, Fecha, Estado, Nota
+- [x] Badges de estado (uploaded, pending-correction, corrected, failed)
+- [x] Acciones: Ver en Drive, Ver corrección, Eliminar
+- [x] Estado vacío con mensaje amigable
 
 #### 5.5. Testing
 - [ ] Login como professor
 - [ ] Ver comisiones
 - [ ] Subir entrega
 - [ ] Ver lista de entregas
+
+### 📦 Archivos Creados
+- `frontend/src/components/professor/ProfessorView.tsx` - Vista principal del profesor
+- `frontend/src/components/professor/UploadSubmissionModal.tsx` - Modal para subir entregas
+- `frontend/src/components/professor/SubmissionsList.tsx` - Lista de entregas
+- `frontend/src/services/submissionService.ts` - Servicio de submissions
+
+### 📦 Archivos Modificados
+- `frontend/src/services/rubricService.ts` - Agregado método getRubricsByCommission
 
 ---
 
