@@ -64,7 +64,10 @@ Esta carpeta contiene los workflows de n8n organizados de **dos formas**:
    - `/spreadsheet` - Sube resultados a Google Sheets
    - `/automatico` - Corrección automática batch (múltiples entregas)
 
-2. 📁 **Flujos de gestión de carpetas en Drive**
+2. 📤 **Flujo de upload de archivos** (NUEVO)
+   - `/upload-file-to-drive` - Sube archivos .txt de entregas a Drive
+
+3. 📁 **Flujos de gestión de carpetas en Drive**
    - `/create-university-folder` - Crea carpeta de universidad
    - `/create-faculty-folder` - Crea carpeta de facultad
    - `/create-career-folder` - Crea carpeta de carrera
@@ -83,6 +86,14 @@ Cada workflow está en su propio archivo para facilitar mantenimiento y versiona
 |---------|---------|-------------|
 | `flujo_correccion_manual.json` | `/corregir` | Corrección individual de una entrega |
 | `flujo_correccion_masiva.json` | `/automatico` | Corrección batch de múltiples entregas |
+
+#### Flujo de Upload de Archivos (NUEVO):
+
+| Archivo | Webhook | Descripción |
+|---------|---------|-------------|
+| `upload-file-to-drive.json` | `/upload-file-to-drive` | Sube archivos .txt de entregas a Google Drive |
+
+**Documentación completa**: Ver `UPLOAD_FILE_WORKFLOW.md`
 
 #### Flujos de Gestión de Carpetas en Google Drive:
 
