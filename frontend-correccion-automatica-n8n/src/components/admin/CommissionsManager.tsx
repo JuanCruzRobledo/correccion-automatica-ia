@@ -22,6 +22,7 @@ export const CommissionsManager = () => {
   const [careers, setCareers] = useState<Career[]>([]);
   const [faculties, setFaculties] = useState<Faculty[]>([]);
   const [universities, setUniversities] = useState<University[]>([]);
+  const [professors, setProfessors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -191,7 +192,7 @@ export const CommissionsManager = () => {
     setFormData({ ...formData, commission_id: suggestedId });
   };
 
-  const handleEdit = (commission: Commission) => {
+  const handleEdit = async (commission: Commission) => {
     setModalMode('edit');
     setFormData({
       commission_id: commission.commission_id,
@@ -215,6 +216,17 @@ export const CommissionsManager = () => {
       year: '',
     });
     setSelectedCommission(commission);
+
+    // Cargar profesores de la universidad
+    if (commission.university_id) {
+      try {
+        const profsList = await commissionService.getProfessorsByUniversity(commission.university_id);
+        setProfessors(profsList);
+      } catch (err) {
+        console.error('Error al cargar profesores:', err);
+      }
+    }
+
     setIsModalOpen(true);
   };
 
@@ -228,6 +240,32 @@ export const CommissionsManager = () => {
       await loadData();
     } catch (err: unknown) {
       alert(err && typeof err === 'object' && 'message' in err ? String(err.message) : 'Error al eliminar comisión');
+    }
+  };
+
+  const handleAssignProfessor = async (professorId: string) => {
+    if (!selectedCommission) return;
+
+    try {
+      const updated = await commissionService.assignProfessor(selectedCommission._id, professorId);
+      setSelectedCommission(updated);
+      await loadData();
+    } catch (err: unknown) {
+      alert(err && typeof err === 'object' && 'message' in err ? String(err.message) : 'Error al asignar profesor');
+    }
+  };
+
+  const handleRemoveProfessor = async (professorId: string) => {
+    if (!selectedCommission) return;
+
+    if (!confirm('¿Quitar este profesor de la comisión?')) return;
+
+    try {
+      const updated = await commissionService.removeProfessor(selectedCommission._id, professorId);
+      setSelectedCommission(updated);
+      await loadData();
+    } catch (err: unknown) {
+      alert(err && typeof err === 'object' && 'message' in err ? String(err.message) : 'Error al remover profesor');
     }
   };
 
@@ -350,8 +388,24 @@ export const CommissionsManager = () => {
       accessor: (row: Commission) => row.year,
     },
     {
-      header: 'Profesor',
-      accessor: (row: Commission) => row.professor_name || '-',
+      header: 'Profesores',
+      accessor: (row: Commission) => {
+        if (row.professors && row.professors.length > 0) {
+          return (
+            <div className="flex flex-wrap gap-1">
+              {row.professors.map((prof) => (
+                <span
+                  key={prof._id}
+                  className="inline-block px-2 py-0.5 rounded-full text-xs bg-accent-2/20 text-accent-2 border border-accent-2/30"
+                >
+                  {prof.name}
+                </span>
+              ))}
+            </div>
+          );
+        }
+        return row.professor_name || '-';
+      },
     },
     {
       header: 'Acciones',
@@ -712,6 +766,76 @@ export const CommissionsManager = () => {
             onChange={(e) => setFormData({ ...formData, professor_email: e.target.value })}
             error={formErrors.professor_email}
           />
+
+          {/* Sección de Asignación de Profesores (solo en modo edición) */}
+          {modalMode === 'edit' && selectedCommission && (
+            <div className="border-t border-border-primary pt-4">
+              <h4 className="text-sm font-medium text-text-primary mb-3">
+                👨‍🏫 Profesores Asignados
+              </h4>
+
+              {/* Lista de profesores asignados */}
+              {selectedCommission.professors && selectedCommission.professors.length > 0 ? (
+                <div className="mb-3 space-y-2">
+                  {selectedCommission.professors.map((prof) => (
+                    <div
+                      key={prof._id}
+                      className="flex items-center justify-between p-2 bg-bg-tertiary rounded-lg border border-border-secondary"
+                    >
+                      <div>
+                        <p className="text-sm text-text-primary font-medium">{prof.name}</p>
+                        <p className="text-xs text-text-disabled">{prof.username}</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        onClick={() => handleRemoveProfessor(prof._id)}
+                      >
+                        Quitar
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="mb-3 p-3 bg-bg-tertiary/50 rounded-lg border border-border-secondary/50">
+                  <p className="text-sm text-text-disabled">No hay profesores asignados</p>
+                </div>
+              )}
+
+              {/* Select para asignar nuevo profesor */}
+              <div>
+                <label className="block text-sm font-medium text-text-primary mb-1">
+                  Asignar Profesor
+                </label>
+                <select
+                  className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-1"
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      handleAssignProfessor(e.target.value);
+                      e.target.value = ''; // Reset select
+                    }
+                  }}
+                >
+                  <option value="">Seleccionar profesor...</option>
+                  {professors
+                    .filter(
+                      (prof) =>
+                        !selectedCommission.professors?.some((assigned) => assigned._id === prof._id)
+                    )
+                    .map((prof) => (
+                      <option key={prof._id} value={prof._id}>
+                        {prof.name} ({prof.username})
+                      </option>
+                    ))}
+                </select>
+                {professors.length === 0 && (
+                  <p className="mt-1 text-xs text-text-disabled">
+                    No hay profesores disponibles en esta universidad
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </Modal>
     </Card>

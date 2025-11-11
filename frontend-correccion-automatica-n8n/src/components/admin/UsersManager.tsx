@@ -10,10 +10,18 @@ import { Modal } from '../shared/Modal';
 import { Table } from '../shared/Table';
 import { Card } from '../shared/Card';
 import userService, { type CreateUserForm, type UpdateUserForm } from '../../services/userService';
+import universityService from '../../services/universityService';
 import type { User } from '../../types';
+
+interface University {
+  _id: string;
+  university_id: string;
+  name: string;
+}
 
 export const UsersManager = () => {
   const [users, setUsers] = useState<User[]>([]);
+  const [universities, setUniversities] = useState<University[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showDeleted, setShowDeleted] = useState(false);
@@ -29,13 +37,15 @@ export const UsersManager = () => {
     name: '',
     password: '',
     role: 'user',
+    university_id: '',
   });
-  const [formErrors, setFormErrors] = useState({ username: '', name: '', password: '', role: '' });
+  const [formErrors, setFormErrors] = useState({ username: '', name: '', password: '', role: '', university_id: '' });
   const [submitting, setSubmitting] = useState(false);
 
-  // Cargar usuarios al montar y cuando cambia showDeleted
+  // Cargar usuarios y universidades al montar
   useEffect(() => {
     loadUsers();
+    loadUniversities();
   }, [showDeleted]);
 
   const loadUsers = async () => {
@@ -51,10 +61,19 @@ export const UsersManager = () => {
     }
   };
 
+  const loadUniversities = async () => {
+    try {
+      const data = await universityService.getUniversities();
+      setUniversities(data);
+    } catch (err: unknown) {
+      console.error('Error al cargar universidades:', err);
+    }
+  };
+
   const handleCreate = () => {
     setModalMode('create');
-    setFormData({ username: '', name: '', password: '', role: 'user' });
-    setFormErrors({ username: '', name: '', password: '', role: '' });
+    setFormData({ username: '', name: '', password: '', role: 'user', university_id: '' });
+    setFormErrors({ username: '', name: '', password: '', role: '', university_id: '' });
     setSelectedUser(null);
     setIsModalOpen(true);
   };
@@ -66,8 +85,9 @@ export const UsersManager = () => {
       name: user.name,
       password: '', // No pre-llenar la contraseña
       role: user.role,
+      university_id: user.university_id || '',
     });
-    setFormErrors({ username: '', name: '', password: '', role: '' });
+    setFormErrors({ username: '', name: '', password: '', role: '', university_id: '' });
     setSelectedUser(user);
     setIsModalOpen(true);
   };
@@ -105,7 +125,7 @@ export const UsersManager = () => {
 
   const handleSubmit = async () => {
     // Validar
-    const errors = { username: '', name: '', password: '', role: '' };
+    const errors = { username: '', name: '', password: '', role: '', university_id: '' };
 
     if (!formData.username?.trim()) {
       errors.username = 'El nombre de usuario es requerido';
@@ -129,7 +149,12 @@ export const UsersManager = () => {
       errors.role = 'El rol es requerido';
     }
 
-    if (errors.username || errors.name || errors.password || errors.role) {
+    // Validar university_id: requerido para todos excepto super-admin
+    if (formData.role !== 'super-admin' && !formData.university_id?.trim()) {
+      errors.university_id = 'La universidad es requerida para este rol';
+    }
+
+    if (errors.username || errors.name || errors.password || errors.role || errors.university_id) {
       setFormErrors(errors);
       return;
     }
@@ -157,6 +182,10 @@ export const UsersManager = () => {
 
         if (formData.role && formData.role !== selectedUser.role) {
           updateData.role = formData.role;
+        }
+
+        if (formData.university_id !== selectedUser.university_id) {
+          updateData.university_id = formData.university_id;
         }
 
         // Solo actualizar si hay cambios
@@ -199,7 +228,11 @@ export const UsersManager = () => {
               : 'bg-accent-1/20 text-accent-1 border border-accent-1/30'
           }`}
         >
-          {row.role === 'admin' ? '👨‍💼 Admin' : '👤 Usuario'}
+          {row.role === 'super-admin' && '🌟 Super Admin'}
+          {row.role === 'university-admin' && '👨‍💼 Admin Universidad'}
+          {row.role === 'professor' && '👨‍🏫 Profesor'}
+          {row.role === 'user' && '👤 Usuario'}
+          {row.role === 'admin' && '👨‍💼 Admin'}
         </span>
       ),
     },
@@ -332,14 +365,32 @@ export const UsersManager = () => {
           <Select
             label="Rol"
             value={formData.role || 'user'}
-            onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'user' })}
+            onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
             error={formErrors.role}
             disabled={selectedUser?.username === 'admin'}
+            tooltip="super-admin: acceso global | university-admin: su universidad | professor: sus comisiones | user: solo corrección"
             options={[
-              { value: 'user', label: '👤 Usuario - Solo puede usar el sistema' },
-              { value: 'admin', label: '👨‍💼 Admin - Acceso completo al panel de administración' },
+              { value: 'user', label: '👤 Usuario - Solo puede usar el sistema de corrección' },
+              { value: 'professor', label: '👨‍🏫 Profesor - Gestiona entregas de sus comisiones' },
+              { value: 'university-admin', label: '👨‍💼 Admin Universidad - Gestiona su universidad' },
+              { value: 'super-admin', label: '🌟 Super Admin - Acceso global a todas las universidades' },
             ]}
           />
+
+          {formData.role !== 'super-admin' && (
+            <Select
+              label="Universidad"
+              value={formData.university_id || ''}
+              onChange={(e) => setFormData({ ...formData, university_id: e.target.value })}
+              error={formErrors.university_id}
+              tooltip="Universidad a la que pertenece el usuario (no requerido para super-admin)"
+              options={universities.map((uni) => ({
+                value: uni.university_id,
+                label: uni.name,
+              }))}
+              placeholder="Selecciona una universidad"
+            />
+          )}
 
           {selectedUser?.username === 'admin' && (
             <div className="bg-accent-2/10 border border-accent-2/50 rounded-xl p-3">
