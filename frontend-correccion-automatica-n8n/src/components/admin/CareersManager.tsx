@@ -121,7 +121,12 @@ export const CareersManager = () => {
 
   const handleCreate = () => {
     setModalMode('create');
-    setFormData({ career_id: '', name: '', faculty_id: '', university_id: '' });
+    setFormData({
+      career_id: '',
+      name: '',
+      faculty_id: '',
+      university_id: userUniversityId || '' // Pre-llenar para university-admin
+    });
     setFormErrors({ career_id: '', name: '', faculty_id: '', university_id: '' });
     setSelectedCareer(null);
     setSuggestedId('');

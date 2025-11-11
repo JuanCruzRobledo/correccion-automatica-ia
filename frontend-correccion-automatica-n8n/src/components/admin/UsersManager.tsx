@@ -9,6 +9,7 @@ import { Select } from '../shared/Select';
 import { Modal } from '../shared/Modal';
 import { Table } from '../shared/Table';
 import { Card } from '../shared/Card';
+import { useAuth } from '../../hooks/useAuth';
 import userService, { type CreateUserForm, type UpdateUserForm } from '../../services/userService';
 import universityService from '../../services/universityService';
 import type { User } from '../../types';
@@ -20,6 +21,10 @@ interface University {
 }
 
 export const UsersManager = () => {
+  const { user: currentUser } = useAuth();
+  const isSuperAdmin = currentUser?.role === 'super-admin';
+  const userUniversityId = currentUser?.university_id;
+
   const [users, setUsers] = useState<User[]>([]);
   const [universities, setUniversities] = useState<University[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,7 +77,13 @@ export const UsersManager = () => {
 
   const handleCreate = () => {
     setModalMode('create');
-    setFormData({ username: '', name: '', password: '', role: 'user', university_id: '' });
+    setFormData({
+      username: '',
+      name: '',
+      password: '',
+      role: 'user',
+      university_id: userUniversityId || '' // Pre-llenar para university-admin
+    });
     setFormErrors({ username: '', name: '', password: '', role: '', university_id: '' });
     setSelectedUser(null);
     setIsModalOpen(true);
@@ -214,6 +225,11 @@ export const UsersManager = () => {
     });
   };
 
+  // Filtrar usuarios por universidad si no es super-admin
+  const filteredUsers = isSuperAdmin
+    ? users
+    : users.filter(u => u.university_id === userUniversityId);
+
   // Columnas de la tabla
   const columns = [
     { header: 'Usuario', accessor: 'username' as keyof User },
@@ -236,6 +252,15 @@ export const UsersManager = () => {
         </span>
       ),
     },
+    // Columna Universidad: solo visible para super-admin
+    ...(isSuperAdmin ? [{
+      header: 'Universidad',
+      accessor: (row: User) => {
+        if (!row.university_id) return '-';
+        const uni = universities.find(u => u.university_id === row.university_id);
+        return uni?.name || row.university_id;
+      },
+    }] : []),
     {
       header: 'Estado',
       accessor: (row: User) => (
@@ -287,7 +312,8 @@ export const UsersManager = () => {
       <div className="mb-4 flex justify-between items-center flex-wrap gap-3">
         <div className="flex items-center gap-4">
           <p className="text-text-disabled text-sm">
-            {users.length} usuario{users.length !== 1 ? 's' : ''} {showDeleted ? 'en total' : 'activos'}
+            {filteredUsers.length} usuario{filteredUsers.length !== 1 ? 's' : ''} {showDeleted ? 'en total' : 'activos'}
+            {!isSuperAdmin && users.length !== filteredUsers.length && ` (de ${users.length} totales)`}
           </p>
 
           {/* Toggle para mostrar eliminados */}
@@ -317,7 +343,7 @@ export const UsersManager = () => {
           <p className="text-text-disabled mt-2">Cargando...</p>
         </div>
       ) : (
-        <Table data={users} columns={columns} emptyMessage="No hay usuarios registrados" />
+        <Table data={filteredUsers} columns={columns} emptyMessage="No hay usuarios registrados" />
       )}
 
       {/* Modal Crear/Editar */}
@@ -368,17 +394,22 @@ export const UsersManager = () => {
             value={formData.role || 'user'}
             onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
             error={formErrors.role}
-            disabled={selectedUser?.username === 'admin'}
+            disabled={selectedUser?.username === 'admin' || !isSuperAdmin}
             tooltip="super-admin: acceso global | university-admin: su universidad | professor: sus comisiones | user: solo corrección"
-            options={[
+            options={isSuperAdmin ? [
               { value: 'user', label: '👤 Usuario - Solo puede usar el sistema de corrección' },
               { value: 'professor', label: '👨‍🏫 Profesor - Gestiona entregas de sus comisiones' },
               { value: 'university-admin', label: '👨‍💼 Admin Universidad - Gestiona su universidad' },
               { value: 'super-admin', label: '🌟 Super Admin - Acceso global a todas las universidades' },
+            ] : [
+              // university-admin solo puede crear usuarios y profesores
+              { value: 'user', label: '👤 Usuario - Solo puede usar el sistema de corrección' },
+              { value: 'professor', label: '👨‍🏫 Profesor - Gestiona entregas de sus comisiones' },
             ]}
           />
 
-          {formData.role !== 'super-admin' && (
+          {/* Campo Universidad: solo visible para super-admin */}
+          {isSuperAdmin && formData.role !== 'super-admin' && (
             <Select
               label="Universidad"
               value={formData.university_id || ''}
@@ -391,6 +422,19 @@ export const UsersManager = () => {
               }))}
               placeholder="Selecciona una universidad"
             />
+          )}
+
+          {/* Mostrar universidad actual si no es super-admin */}
+          {!isSuperAdmin && userUniversityId && (
+            <div className="bg-bg-tertiary/50 border border-border-secondary rounded-lg p-3">
+              <p className="text-sm text-text-disabled mb-1">Universidad</p>
+              <p className="text-text-primary font-medium">
+                {universities.find(u => u.university_id === userUniversityId)?.name || userUniversityId}
+              </p>
+              <p className="text-xs text-text-disabled mt-1">
+                (los usuarios que crees pertenecerán a tu universidad)
+              </p>
+            </div>
           )}
 
           {selectedUser?.username === 'admin' && (

@@ -8,6 +8,7 @@ import { Input } from '../shared/Input';
 import { Modal } from '../shared/Modal';
 import { Table } from '../shared/Table';
 import { Card } from '../shared/Card';
+import { useAuth } from '../../hooks/useAuth';
 import commissionService from '../../services/commissionService';
 import courseService from '../../services/courseService';
 import careerService from '../../services/careerService';
@@ -17,6 +18,10 @@ import { suggestUniversityId, cleanId } from '../../utils/slugify';
 import type { Commission, Course, Career, Faculty, University } from '../../types';
 
 export const CommissionsManager = () => {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'super-admin';
+  const userUniversityId = user?.university_id;
+
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [careers, setCareers] = useState<Career[]>([]);
@@ -26,9 +31,9 @@ export const CommissionsManager = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Filtros
+  // Filtros (auto-filtrar por universidad si no es super-admin)
   const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
-  const [filterUniversityId, setFilterUniversityId] = useState('');
+  const [filterUniversityId, setFilterUniversityId] = useState(userUniversityId || '');
   const [filterFacultyId, setFilterFacultyId] = useState('');
   const [filterCareerId, setFilterCareerId] = useState('');
   const [filterCourseId, setFilterCourseId] = useState('');
@@ -159,14 +164,14 @@ export const CommissionsManager = () => {
 
   const handleCreate = () => {
     setModalMode('create');
-    // Pre-llenar con valores de filtros
+    // Pre-llenar con valores de filtros (priorizar userUniversityId para university-admin)
     setFormData({
       commission_id: '',
       name: '',
       course_id: filterCourseId || '',
       career_id: filterCareerId || '',
       faculty_id: filterFacultyId || '',
-      university_id: filterUniversityId || '',
+      university_id: userUniversityId || filterUniversityId || '',
       professor_name: '',
       professor_email: '',
       year: filterYear ? parseInt(filterYear) : new Date().getFullYear(),
@@ -433,7 +438,7 @@ export const CommissionsManager = () => {
         </div>
 
         {/* Filtros */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+        <div className={`grid grid-cols-1 ${isSuperAdmin ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-3`}>
           <div>
             <label className="block text-sm font-medium text-text-primary mb-1">
               Año *
@@ -457,29 +462,32 @@ export const CommissionsManager = () => {
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-text-primary mb-1">
-              Universidad *
-            </label>
-            <select
-              className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-1 disabled:opacity-50"
-              value={filterUniversityId}
-              onChange={(e) => {
-                setFilterUniversityId(e.target.value);
-                setFilterFacultyId('');
-                setFilterCareerId('');
-                setFilterCourseId('');
-              }}
-              disabled={!filterYear}
-            >
-              <option value="">Seleccionar universidad...</option>
-              {universities.map((uni) => (
-                <option key={uni._id} value={uni.university_id}>
-                  {uni.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Filtro Universidad: solo para super-admin */}
+          {isSuperAdmin && (
+            <div>
+              <label className="block text-sm font-medium text-text-primary mb-1">
+                Universidad *
+              </label>
+              <select
+                className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-1 disabled:opacity-50"
+                value={filterUniversityId}
+                onChange={(e) => {
+                  setFilterUniversityId(e.target.value);
+                  setFilterFacultyId('');
+                  setFilterCareerId('');
+                  setFilterCourseId('');
+                }}
+                disabled={!filterYear}
+              >
+                <option value="">Seleccionar universidad...</option>
+                {universities.map((uni) => (
+                  <option key={uni._id} value={uni.university_id}>
+                    {uni.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-text-primary mb-1">
@@ -583,27 +591,43 @@ export const CommissionsManager = () => {
       >
         <div className="space-y-4 max-h-[70vh] overflow-y-auto px-1">
           {/* Jerarquía */}
-          <div>
-            <label className="block text-sm font-medium text-text-primary mb-1">
-              Universidad *
-            </label>
-            <select
-              className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-1"
-              value={formData.university_id}
-              onChange={(e) => setFormData({ ...formData, university_id: e.target.value })}
-              disabled={modalMode === 'edit'}
-            >
-              <option value="">Seleccionar universidad...</option>
-              {universities.map((uni) => (
-                <option key={uni._id} value={uni.university_id}>
-                  {uni.name}
-                </option>
-              ))}
-            </select>
-            {formErrors.university_id && (
-              <p className="mt-1 text-xs text-danger-1">{formErrors.university_id}</p>
-            )}
-          </div>
+          {/* Campo Universidad: solo visible para super-admin */}
+          {isSuperAdmin && (
+            <div>
+              <label className="block text-sm font-medium text-text-primary mb-1">
+                Universidad *
+              </label>
+              <select
+                className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-1"
+                value={formData.university_id}
+                onChange={(e) => setFormData({ ...formData, university_id: e.target.value })}
+                disabled={modalMode === 'edit'}
+              >
+                <option value="">Seleccionar universidad...</option>
+                {universities.map((uni) => (
+                  <option key={uni._id} value={uni.university_id}>
+                    {uni.name}
+                  </option>
+                ))}
+              </select>
+              {formErrors.university_id && (
+                <p className="mt-1 text-xs text-danger-1">{formErrors.university_id}</p>
+              )}
+              {modalMode === 'edit' && (
+                <p className="mt-1 text-xs text-text-disabled">La universidad no se puede modificar</p>
+              )}
+            </div>
+          )}
+
+          {/* Mostrar universidad actual si no es super-admin */}
+          {!isSuperAdmin && userUniversityId && (
+            <div className="bg-bg-tertiary/50 border border-border-secondary rounded-lg p-3">
+              <p className="text-sm text-text-disabled mb-1">Universidad</p>
+              <p className="text-text-primary font-medium">
+                {universities.find(u => u.university_id === userUniversityId)?.name || userUniversityId}
+              </p>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-text-primary mb-1">
