@@ -1,5 +1,4 @@
 {
-  "name": "Upload File to Drive",
   "nodes": [
     {
       "parameters": {
@@ -10,72 +9,47 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [240, 300],
-      "id": "webhook-upload-file",
+      "position": [
+        -3392,
+        1760
+      ],
+      "id": "abe50d7f-13df-44bc-8023-55e29899ab33",
       "name": "Webhook - Upload File",
-      "webhookId": ""
+      "webhookId": "db4f0676-53ee-401e-927e-3f78c3d14f85"
     },
     {
       "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "1",
-              "name": "fileName",
-              "value": "={{ $json.body.fileName }}",
-              "type": "string"
-            },
-            {
-              "id": "2",
-              "name": "folderId",
-              "value": "={{ $json.body.folderId }}",
-              "type": "string"
-            },
-            {
-              "id": "3",
-              "name": "fileData",
-              "value": "={{ $json.body.file }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [460, 300],
-      "id": "set-upload-variables",
-      "name": "Set Variables"
-    },
-    {
-      "parameters": {
-        "operation": "upload",
-        "name": "={{ $json.fileName }}",
+        "name": "={{ $('Set Variables6').item.json.fileName }}",
         "driveId": {
           "__rl": true,
+          "value": "My Drive",
           "mode": "list",
-          "value": "My Drive"
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
         },
         "folderId": {
           "__rl": true,
-          "value": "={{ $json.folderId }}",
+          "value": "={{ $('Set Variables6').item.json.folderId }}",
           "mode": "id"
         },
-        "options": {
-          "mimeType": "text/plain"
-        }
+        "options": {}
       },
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
-      "position": [680, 300],
-      "id": "upload-to-drive",
+      "position": [
+        -2768,
+        1776
+      ],
+      "id": "6b256608-7f70-42ea-a006-28e8d1692417",
       "name": "Upload to Google Drive",
       "credentials": {
         "googleDriveOAuth2Api": {
-          "id": "",
+          "id": "Szu2o4YspK0rOeZL",
           "name": "Google Drive account"
         }
-      }
+      },
+      "continueOnFail": true,
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -111,21 +85,12 @@
       },
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [900, 300],
-      "id": "format-response",
+      "position": [
+        -2544,
+        1760
+      ],
+      "id": "a315d382-f676-4d4a-9dd4-7d2df7d8755c",
       "name": "Format Response"
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ $json }}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [1120, 300],
-      "id": "respond-success",
-      "name": "Respond Success"
     },
     {
       "parameters": {
@@ -140,7 +105,13 @@
             {
               "id": "2",
               "name": "error",
-              "value": "={{ $json.message }}",
+              "value": "={{ $json.error?.message || $json.message || 'Error uploading file to Google Drive' }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "error_details",
+              "value": "={{ $json.error?.description || $json.description || 'Unknown error' }}",
               "type": "string"
             }
           ]
@@ -149,8 +120,11 @@
       },
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [900, 480],
-      "id": "format-error",
+      "position": [
+        -2544,
+        1952
+      ],
+      "id": "61cdfb1f-ba4f-4693-9891-8c1d58c507a1",
       "name": "Format Error"
     },
     {
@@ -163,9 +137,77 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1120, 480],
-      "id": "respond-error",
+      "position": [
+        -2288,
+        1952
+      ],
+      "id": "e4c7506e-9370-47fc-bae4-c2c8b7db5fa8",
       "name": "Respond Error"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "fileName",
+              "value": "={{ $json.body.fileName }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "folderId",
+              "value": "={{ $json.body.folderId }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "fileContent",
+              "value": "={{ $json.body.fileContent }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3168,
+        1760
+      ],
+      "id": "144dc59d-5238-490d-8672-0d856e54900e",
+      "name": "Set Variables6"
+    },
+    {
+      "parameters": {
+        "options": {
+          "fileName": "={{ $json.fileName }}"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        -2960,
+        1760
+      ],
+      "id": "e0ef6492-bc01-4e7e-a48d-3916b03a6c82",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -2288,
+        1760
+      ],
+      "id": "6ffcb655-bf2b-4017-b6f7-41045d94405e",
+      "name": "Respond Success6"
     }
   ],
   "connections": {
@@ -173,18 +215,7 @@
       "main": [
         [
           {
-            "node": "Set Variables",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Set Variables": {
-      "main": [
-        [
-          {
-            "node": "Upload to Google Drive",
+            "node": "Set Variables6",
             "type": "main",
             "index": 0
           }
@@ -199,6 +230,13 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Format Error",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -206,7 +244,7 @@
       "main": [
         [
           {
-            "node": "Respond Success",
+            "node": "Respond Success6",
             "type": "main",
             "index": 0
           }
@@ -223,15 +261,33 @@
           }
         ]
       ]
+    },
+    "Set Variables6": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Upload to Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "pinData": {},
-  "settings": {
-    "executionOrder": "v1"
-  },
-  "staticData": null,
-  "tags": [],
-  "triggerCount": 0,
-  "updatedAt": "2025-11-10T00:00:00.000Z",
-  "versionId": ""
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f0981ae4c0ef6f915f0b46ae60edab85d4bd6cddc77dbd7c3bcb8e7a3ea6e2a7"
+  }
 }

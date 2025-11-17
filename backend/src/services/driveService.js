@@ -4,7 +4,6 @@
  * cuando se crean nuevas entidades en el sistema
  */
 import axios from 'axios';
-import FormData from 'form-data';
 import fs from 'fs';
 
 /**
@@ -249,7 +248,7 @@ export const createSubmissionFolder = async (submit_id, commission_id, course_id
 
 /**
  * Subir archivo a Google Drive (para entregas de alumnos)
- * Usa webhook de n8n que recibe FormData con el archivo
+ * Usa webhook de n8n que recibe el archivo como texto plano en JSON
  * @param {String} filePath - Ruta del archivo temporal en el servidor
  * @param {String} fileName - Nombre con el que se guardará en Drive (ej: "alumno-juan-perez.txt")
  * @param {String} rubricDriveFolderId - ID de la carpeta de rúbrica en Drive
@@ -263,22 +262,30 @@ export const uploadFileToDrive = async (filePath, fileName, rubricDriveFolderId)
       throw new Error('N8N_UPLOAD_FILE_TO_DRIVE_WEBHOOK no está configurado en .env');
     }
 
-    console.log(`📤 Subiendo archivo a Drive: ${fileName} (carpeta: ${rubricDriveFolderId})`);
+    console.log(`📤 Subiendo archivo a Drive: ${fileName}`);
+    console.log(`📁 Carpeta destino (folderId): ${rubricDriveFolderId}`);
 
-    // Crear FormData con el archivo
-    const formData = new FormData();
-    formData.append('file', fs.createReadStream(filePath));
-    formData.append('fileName', fileName);
-    formData.append('folderId', rubricDriveFolderId);
+    // Leer el contenido del archivo como texto (es un .txt)
+    const fileContent = await fs.promises.readFile(filePath, 'utf-8');
 
-    // Enviar al webhook de n8n
-    const response = await axios.post(webhookUrl, formData, {
+    const payload = {
+      fileName,
+      folderId: rubricDriveFolderId,
+      fileContent, // Contenido del archivo como string
+    };
+
+    console.log(`📦 Payload a enviar:`, {
+      fileName: payload.fileName,
+      folderId: payload.folderId,
+      fileContentLength: payload.fileContent.length,
+    });
+
+    // Enviar al webhook de n8n como JSON
+    const response = await axios.post(webhookUrl, payload, {
       headers: {
-        ...formData.getHeaders(),
+        'Content-Type': 'application/json',
       },
       timeout: 60000, // 60 segundos para archivos grandes
-      maxContentLength: Infinity,
-      maxBodyLength: Infinity,
     });
 
     console.log(`✅ Archivo subido a Drive: ${fileName}`);

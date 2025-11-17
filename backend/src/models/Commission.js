@@ -39,18 +39,6 @@ const commissionSchema = new mongoose.Schema(
       required: [true, 'El ID de la universidad es requerido'],
       index: true,
     },
-    professor_name: {
-      type: String,
-      trim: true,
-      default: null,
-    },
-    professor_email: {
-      type: String,
-      trim: true,
-      lowercase: true,
-      match: [/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/, 'Email inválido'],
-      default: null,
-    },
     professors: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

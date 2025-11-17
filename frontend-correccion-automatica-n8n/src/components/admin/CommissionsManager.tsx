@@ -20,7 +20,11 @@ import type { Commission, Course, Career, Faculty, University } from '../../type
 export const CommissionsManager = () => {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'super-admin';
+  const isProfessorAdmin = user?.role === 'professor-admin';
+  const isFacultyAdmin = user?.role === 'faculty-admin';
   const userUniversityId = user?.university_id;
+  const userFacultyId = user?.faculty_id;
+  const userCourseIds = user?.course_ids || [];
 
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -31,12 +35,14 @@ export const CommissionsManager = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Filtros (auto-filtrar por universidad si no es super-admin)
+  // Filtros (auto-filtrar por universidad, facultad y curso según rol)
   const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
   const [filterUniversityId, setFilterUniversityId] = useState(userUniversityId || '');
-  const [filterFacultyId, setFilterFacultyId] = useState('');
+  const [filterFacultyId, setFilterFacultyId] = useState(userFacultyId || '');
   const [filterCareerId, setFilterCareerId] = useState('');
-  const [filterCourseId, setFilterCourseId] = useState('');
+  const [filterCourseId, setFilterCourseId] = useState(
+    isProfessorAdmin && userCourseIds.length === 1 ? userCourseIds[0] : ''
+  );
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -51,8 +57,6 @@ export const CommissionsManager = () => {
     career_id: '',
     faculty_id: '',
     university_id: '',
-    professor_name: '',
-    professor_email: '',
     year: new Date().getFullYear(),
   });
   const [formErrors, setFormErrors] = useState({
@@ -62,13 +66,13 @@ export const CommissionsManager = () => {
     career_id: '',
     faculty_id: '',
     university_id: '',
-    professor_email: '',
     year: '',
   });
   const [submitting, setSubmitting] = useState(false);
   const [suggestedId, setSuggestedId] = useState('');
   const [checkingDuplicate, setCheckingDuplicate] = useState(false);
   const [isDuplicate, setIsDuplicate] = useState(false);
+  const [selectedProfessorsForCreate, setSelectedProfessorsForCreate] = useState<string[]>([]);
 
   // Actualizar filtro de universidad cuando userUniversityId está disponible
   useEffect(() => {
@@ -118,15 +122,29 @@ export const CommissionsManager = () => {
     return () => clearTimeout(timeoutId);
   }, [formData.commission_id, formData.course_id, modalMode, commissions]);
 
-  // Actualizar jerarquía en cascada
+  // Actualizar jerarquía en cascada y cargar profesores cuando cambia universidad
   useEffect(() => {
     if (formData.university_id) {
       const filteredFaculties = faculties.filter(f => f.university_id === formData.university_id);
       if (formData.faculty_id && !filteredFaculties.find(f => f.faculty_id === formData.faculty_id)) {
         setFormData(prev => ({ ...prev, faculty_id: '', career_id: '', course_id: '' }));
       }
+
+      // Cargar profesores cuando cambia universidad en modo creación
+      if (modalMode === 'create' && isModalOpen) {
+        const loadProfessors = async () => {
+          try {
+            const profsList = await commissionService.getProfessorsByUniversity(formData.university_id);
+            setProfessors(profsList);
+          } catch (err) {
+            console.error('Error al cargar profesores:', err);
+            setProfessors([]);
+          }
+        };
+        loadProfessors();
+      }
     }
-  }, [formData.university_id, faculties, formData.faculty_id]);
+  }, [formData.university_id, faculties, formData.faculty_id, modalMode, isModalOpen]);
 
   useEffect(() => {
     if (formData.faculty_id) {
@@ -169,8 +187,10 @@ export const CommissionsManager = () => {
     }
   };
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     setModalMode('create');
+    const prefilledUniversityId = userUniversityId || filterUniversityId || '';
+
     // Pre-llenar con valores de filtros (priorizar userUniversityId para university-admin)
     setFormData({
       commission_id: '',
@@ -178,9 +198,7 @@ export const CommissionsManager = () => {
       course_id: filterCourseId || '',
       career_id: filterCareerId || '',
       faculty_id: filterFacultyId || '',
-      university_id: userUniversityId || filterUniversityId || '',
-      professor_name: '',
-      professor_email: '',
+      university_id: prefilledUniversityId,
       year: filterYear ? parseInt(filterYear) : new Date().getFullYear(),
     });
     setFormErrors({
@@ -190,13 +208,27 @@ export const CommissionsManager = () => {
       career_id: '',
       faculty_id: '',
       university_id: '',
-      professor_email: '',
       year: '',
     });
     setSelectedCommission(null);
     setSuggestedId('');
     setIsDuplicate(false);
     setCheckingDuplicate(false);
+    setSelectedProfessorsForCreate([]);
+
+    // Cargar profesores disponibles si ya hay universidad seleccionada
+    if (prefilledUniversityId) {
+      try {
+        const profsList = await commissionService.getProfessorsByUniversity(prefilledUniversityId);
+        setProfessors(profsList);
+      } catch (err) {
+        console.error('Error al cargar profesores:', err);
+        setProfessors([]);
+      }
+    } else {
+      setProfessors([]);
+    }
+
     setIsModalOpen(true);
   };
 
@@ -213,8 +245,6 @@ export const CommissionsManager = () => {
       career_id: commission.career_id,
       faculty_id: commission.faculty_id,
       university_id: commission.university_id,
-      professor_name: commission.professor_name || '',
-      professor_email: commission.professor_email || '',
       year: commission.year,
     });
     setFormErrors({
@@ -224,18 +254,18 @@ export const CommissionsManager = () => {
       career_id: '',
       faculty_id: '',
       university_id: '',
-      professor_email: '',
       year: '',
     });
     setSelectedCommission(commission);
 
-    // Cargar profesores de la universidad
+    // Cargar profesores disponibles de la universidad (solo role=professor)
     if (commission.university_id) {
       try {
         const profsList = await commissionService.getProfessorsByUniversity(commission.university_id);
         setProfessors(profsList);
       } catch (err) {
         console.error('Error al cargar profesores:', err);
+        setProfessors([]);
       }
     }
 
@@ -281,6 +311,16 @@ export const CommissionsManager = () => {
     }
   };
 
+  const handleAddProfessorForCreate = (professorId: string) => {
+    if (!selectedProfessorsForCreate.includes(professorId)) {
+      setSelectedProfessorsForCreate([...selectedProfessorsForCreate, professorId]);
+    }
+  };
+
+  const handleRemoveProfessorForCreate = (professorId: string) => {
+    setSelectedProfessorsForCreate(selectedProfessorsForCreate.filter(id => id !== professorId));
+  };
+
   const handleSubmit = async () => {
     // Validar
     const errors = {
@@ -290,7 +330,6 @@ export const CommissionsManager = () => {
       career_id: '',
       faculty_id: '',
       university_id: '',
-      professor_email: '',
       year: '',
     };
 
@@ -301,9 +340,6 @@ export const CommissionsManager = () => {
     if (!formData.faculty_id) errors.faculty_id = 'La facultad es requerida';
     if (!formData.university_id) errors.university_id = 'La universidad es requerida';
     if (!formData.year) errors.year = 'El año es requerido';
-    if (formData.professor_email && !/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(formData.professor_email)) {
-      errors.professor_email = 'Email inválido';
-    }
     if (isDuplicate) errors.commission_id = 'Este ID ya existe en esta materia';
 
     if (Object.values(errors).some(e => e)) {
@@ -315,7 +351,18 @@ export const CommissionsManager = () => {
       setSubmitting(true);
 
       if (modalMode === 'create') {
-        await commissionService.createCommission(formData);
+        const newCommission = await commissionService.createCommission(formData);
+
+        // Asignar profesores seleccionados si hay alguno
+        if (selectedProfessorsForCreate.length > 0) {
+          for (const professorId of selectedProfessorsForCreate) {
+            try {
+              await commissionService.assignProfessor(newCommission._id, professorId);
+            } catch (err) {
+              console.error('Error al asignar profesor:', err);
+            }
+          }
+        }
       } else if (selectedCommission) {
         await commissionService.updateCommission(selectedCommission._id, {
           name: formData.name,
@@ -323,8 +370,6 @@ export const CommissionsManager = () => {
           career_id: formData.career_id,
           faculty_id: formData.faculty_id,
           university_id: formData.university_id,
-          professor_name: formData.professor_name || undefined,
-          professor_email: formData.professor_email || undefined,
           year: formData.year,
         });
       }
@@ -784,21 +829,67 @@ export const CommissionsManager = () => {
             )}
           </div>
 
-          <Input
-            label="Nombre del Profesor"
-            placeholder="ej: Prof. Juan Pérez"
-            value={formData.professor_name}
-            onChange={(e) => setFormData({ ...formData, professor_name: e.target.value })}
-          />
+          {/* Sección de Asignación de Profesores (modo creación) */}
+          {modalMode === 'create' && professors.length > 0 && (
+            <div className="border-t border-border-primary pt-4">
+              <h4 className="text-sm font-medium text-text-primary mb-3">
+                👨‍🏫 Asignar Profesores (Opcional)
+              </h4>
 
-          <Input
-            label="Email del Profesor"
-            type="email"
-            placeholder="ej: juan.perez@example.com"
-            value={formData.professor_email}
-            onChange={(e) => setFormData({ ...formData, professor_email: e.target.value })}
-            error={formErrors.professor_email}
-          />
+              {/* Lista de profesores seleccionados */}
+              {selectedProfessorsForCreate.length > 0 && (
+                <div className="mb-3 space-y-2">
+                  {selectedProfessorsForCreate.map((profId) => {
+                    const prof = professors.find(p => p._id === profId);
+                    if (!prof) return null;
+                    return (
+                      <div
+                        key={profId}
+                        className="flex items-center justify-between p-2 bg-bg-tertiary rounded-lg border border-border-secondary"
+                      >
+                        <div>
+                          <p className="text-sm text-text-primary font-medium">{prof.name}</p>
+                          <p className="text-xs text-text-disabled">{prof.username}</p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          onClick={() => handleRemoveProfessorForCreate(profId)}
+                        >
+                          Quitar
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Select para agregar profesor */}
+              <div>
+                <label className="block text-sm font-medium text-text-primary mb-1">
+                  Agregar Profesor
+                </label>
+                <select
+                  className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-1"
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      handleAddProfessorForCreate(e.target.value);
+                      e.target.value = ''; // Reset select
+                    }
+                  }}
+                >
+                  <option value="">Seleccionar profesor...</option>
+                  {professors
+                    .filter((prof) => !selectedProfessorsForCreate.includes(prof._id))
+                    .map((prof) => (
+                      <option key={prof._id} value={prof._id}>
+                        {prof.name} ({prof.username})
+                      </option>
+                    ))}
+                </select>
+              </div>
+            </div>
+          )}
 
           {/* Sección de Asignación de Profesores (solo en modo edición) */}
           {modalMode === 'edit' && selectedCommission && (

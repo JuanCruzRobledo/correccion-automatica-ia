@@ -53,33 +53,34 @@ const careers = [
 
 /**
  * Datos de cursos (ahora con año y nueva jerarquía)
+ * IMPORTANTE: course_id debe ser único, incluye career_id para evitar duplicados
  */
 const currentYear = 2025;
 const courses = [
   // UTN FRM - ISI
-  { course_id: `${currentYear}-programacion-1`, name: 'Programación 1', year: currentYear, career_id: 'isi-frm', faculty_id: 'frm', university_id: 'utn' },
-  { course_id: `${currentYear}-programacion-2`, name: 'Programación 2', year: currentYear, career_id: 'isi-frm', faculty_id: 'frm', university_id: 'utn' },
-  { course_id: `${currentYear}-programacion-3`, name: 'Programación 3', year: currentYear, career_id: 'isi-frm', faculty_id: 'frm', university_id: 'utn' },
-  { course_id: `${currentYear}-bases-de-datos-1`, name: 'Bases de Datos 1', year: currentYear, career_id: 'isi-frm', faculty_id: 'frm', university_id: 'utn' },
-  { course_id: `${currentYear}-disenio-de-sistemas`, name: 'Diseño de Sistemas', year: currentYear, career_id: 'isi-frm', faculty_id: 'frm', university_id: 'utn' },
+  { course_id: `${currentYear}-isi-frm-programacion-1`, name: 'Programación 1', year: currentYear, career_id: 'isi-frm', faculty_id: 'frm', university_id: 'utn' },
+  { course_id: `${currentYear}-isi-frm-programacion-2`, name: 'Programación 2', year: currentYear, career_id: 'isi-frm', faculty_id: 'frm', university_id: 'utn' },
+  { course_id: `${currentYear}-isi-frm-programacion-3`, name: 'Programación 3', year: currentYear, career_id: 'isi-frm', faculty_id: 'frm', university_id: 'utn' },
+  { course_id: `${currentYear}-isi-frm-bases-de-datos-1`, name: 'Bases de Datos 1', year: currentYear, career_id: 'isi-frm', faculty_id: 'frm', university_id: 'utn' },
+  { course_id: `${currentYear}-isi-frm-disenio-de-sistemas`, name: 'Diseño de Sistemas', year: currentYear, career_id: 'isi-frm', faculty_id: 'frm', university_id: 'utn' },
 
   // UTN FRSN - ISI
-  { course_id: `${currentYear}-programacion-1`, name: 'Programación 1', year: currentYear, career_id: 'isi-frsn', faculty_id: 'frsn', university_id: 'utn' },
-  { course_id: `${currentYear}-programacion-2`, name: 'Programación 2', year: currentYear, career_id: 'isi-frsn', faculty_id: 'frsn', university_id: 'utn' },
-  { course_id: `${currentYear}-programacion-3`, name: 'Programación 3', year: currentYear, career_id: 'isi-frsn', faculty_id: 'frsn', university_id: 'utn' },
-  { course_id: `${currentYear}-bases-de-datos-1`, name: 'Bases de Datos 1', year: currentYear, career_id: 'isi-frsn', faculty_id: 'frsn', university_id: 'utn' },
+  { course_id: `${currentYear}-isi-frsn-programacion-1`, name: 'Programación 1', year: currentYear, career_id: 'isi-frsn', faculty_id: 'frsn', university_id: 'utn' },
+  { course_id: `${currentYear}-isi-frsn-programacion-2`, name: 'Programación 2', year: currentYear, career_id: 'isi-frsn', faculty_id: 'frsn', university_id: 'utn' },
+  { course_id: `${currentYear}-isi-frsn-programacion-3`, name: 'Programación 3', year: currentYear, career_id: 'isi-frsn', faculty_id: 'frsn', university_id: 'utn' },
+  { course_id: `${currentYear}-isi-frsn-bases-de-datos-1`, name: 'Bases de Datos 1', year: currentYear, career_id: 'isi-frsn', faculty_id: 'frsn', university_id: 'utn' },
 
   // UTN FRA - ISI
-  { course_id: `${currentYear}-programacion-1`, name: 'Programación 1', year: currentYear, career_id: 'isi-fra', faculty_id: 'fra', university_id: 'utn' },
-  { course_id: `${currentYear}-programacion-2`, name: 'Programación 2', year: currentYear, career_id: 'isi-fra', faculty_id: 'fra', university_id: 'utn' },
-  { course_id: `${currentYear}-programacion-3`, name: 'Programación 3', year: currentYear, career_id: 'isi-fra', faculty_id: 'fra', university_id: 'utn' },
-  { course_id: `${currentYear}-bases-de-datos-1`, name: 'Bases de Datos 1', year: currentYear, career_id: 'isi-fra', faculty_id: 'fra', university_id: 'utn' },
+  { course_id: `${currentYear}-isi-fra-programacion-1`, name: 'Programación 1', year: currentYear, career_id: 'isi-fra', faculty_id: 'fra', university_id: 'utn' },
+  { course_id: `${currentYear}-isi-fra-programacion-2`, name: 'Programación 2', year: currentYear, career_id: 'isi-fra', faculty_id: 'fra', university_id: 'utn' },
+  { course_id: `${currentYear}-isi-fra-programacion-3`, name: 'Programación 3', year: currentYear, career_id: 'isi-fra', faculty_id: 'fra', university_id: 'utn' },
+  { course_id: `${currentYear}-isi-fra-bases-de-datos-1`, name: 'Bases de Datos 1', year: currentYear, career_id: 'isi-fra', faculty_id: 'fra', university_id: 'utn' },
 
   // UTN FRBA - ISI
-  { course_id: `${currentYear}-programacion-1`, name: 'Programación 1', year: currentYear, career_id: 'isi-frba', faculty_id: 'frba', university_id: 'utn' },
-  { course_id: `${currentYear}-programacion-2`, name: 'Programación 2', year: currentYear, career_id: 'isi-frba', faculty_id: 'frba', university_id: 'utn' },
-  { course_id: `${currentYear}-programacion-3`, name: 'Programación 3', year: currentYear, career_id: 'isi-frba', faculty_id: 'frba', university_id: 'utn' },
-  { course_id: `${currentYear}-bases-de-datos-1`, name: 'Bases de Datos 1', year: currentYear, career_id: 'isi-frba', faculty_id: 'frba', university_id: 'utn' },
+  { course_id: `${currentYear}-isi-frba-programacion-1`, name: 'Programación 1', year: currentYear, career_id: 'isi-frba', faculty_id: 'frba', university_id: 'utn' },
+  { course_id: `${currentYear}-isi-frba-programacion-2`, name: 'Programación 2', year: currentYear, career_id: 'isi-frba', faculty_id: 'frba', university_id: 'utn' },
+  { course_id: `${currentYear}-isi-frba-programacion-3`, name: 'Programación 3', year: currentYear, career_id: 'isi-frba', faculty_id: 'frba', university_id: 'utn' },
+  { course_id: `${currentYear}-isi-frba-bases-de-datos-1`, name: 'Bases de Datos 1', year: currentYear, career_id: 'isi-frba', faculty_id: 'frba', university_id: 'utn' },
 ];
 
 /**
@@ -391,7 +392,168 @@ const seedDatabase = async () => {
     const createdCourses = await Course.insertMany(courses);
     console.log(`✅ ${createdCourses.length} cursos creados\n`);
 
-    // 5. Crear comisiones para cada curso
+    // 5. Crear usuarios de prueba para cada rol (ANTES de comisiones para poder asignarlos)
+    console.log('👥 Creando usuarios de prueba para todos los roles...\n');
+
+    const users = [];
+
+    // 5.1. Super Admin (sin university_id)
+    const superAdmin = new User({
+      username: 'superadmin',
+      name: 'Super Administrador',
+      password: 'admin123',
+      role: 'super-admin',
+      university_id: null,
+      deleted: false,
+    });
+    await superAdmin.save();
+    users.push(superAdmin);
+    console.log('   ✅ super-admin: superadmin / admin123 (acceso global)');
+
+    // 5.2. University Admin (con university_id)
+    const universityAdmin = new User({
+      username: 'admin-utn',
+      name: 'Administrador UTN',
+      password: 'admin123',
+      role: 'university-admin',
+      university_id: 'utn',
+      deleted: false,
+    });
+    await universityAdmin.save();
+    users.push(universityAdmin);
+    console.log('   ✅ university-admin: admin-utn / admin123 (gestiona UTN)');
+
+    // 5.3. Faculty Admin (con university_id y faculty_id) - NUEVO EN V4
+    const facultyAdmin1 = new User({
+      username: 'admin-frm',
+      name: 'Administrador FRM',
+      password: 'admin123',
+      role: 'faculty-admin',
+      university_id: 'utn',
+      faculty_id: 'frm',
+      first_login: true, // Debe cambiar contraseña en primer login
+      deleted: false,
+    });
+    await facultyAdmin1.save();
+    users.push(facultyAdmin1);
+    console.log('   ✅ faculty-admin: admin-frm / admin123 (gestiona FRM)');
+
+    const facultyAdmin2 = new User({
+      username: 'admin-frsn',
+      name: 'Administrador FRSN',
+      password: 'admin123',
+      role: 'faculty-admin',
+      university_id: 'utn',
+      faculty_id: 'frsn',
+      first_login: true,
+      deleted: false,
+    });
+    await facultyAdmin2.save();
+    users.push(facultyAdmin2);
+    console.log('   ✅ faculty-admin: admin-frsn / admin123 (gestiona FRSN)');
+
+    // 5.4. Professor Admin (Jefe de Cátedra) - NUEVO EN V4
+    const professorAdmin1 = new User({
+      username: 'jefe-prog1-frm',
+      name: 'Jefe Programación 1 FRM',
+      password: 'admin123',
+      role: 'professor-admin',
+      university_id: 'utn',
+      faculty_id: 'frm',
+      course_ids: [`${currentYear}-isi-frm-programacion-1`],
+      first_login: true,
+      deleted: false,
+    });
+    await professorAdmin1.save();
+    users.push(professorAdmin1);
+    console.log('   ✅ professor-admin: jefe-prog1-frm / admin123 (Jefe de Programación 1 FRM)');
+
+    const professorAdmin2 = new User({
+      username: 'jefe-prog2-frm',
+      name: 'Jefe Programación 2 FRM',
+      password: 'admin123',
+      role: 'professor-admin',
+      university_id: 'utn',
+      faculty_id: 'frm',
+      course_ids: [`${currentYear}-isi-frm-programacion-2`],
+      first_login: true,
+      deleted: false,
+    });
+    await professorAdmin2.save();
+    users.push(professorAdmin2);
+    console.log('   ✅ professor-admin: jefe-prog2-frm / admin123 (Jefe de Programación 2 FRM)');
+
+    // Jefe de cátedra con múltiples materias
+    const professorAdmin3 = new User({
+      username: 'jefe-multi-frsn',
+      name: 'Jefe Múltiples Materias FRSN',
+      password: 'admin123',
+      role: 'professor-admin',
+      university_id: 'utn',
+      faculty_id: 'frsn',
+      course_ids: [
+        `${currentYear}-isi-frsn-programacion-1`,
+        `${currentYear}-isi-frsn-programacion-2`,
+        `${currentYear}-isi-frsn-programacion-3`,
+      ],
+      first_login: true,
+      deleted: false,
+    });
+    await professorAdmin3.save();
+    users.push(professorAdmin3);
+    console.log('   ✅ professor-admin: jefe-multi-frsn / admin123 (Jefe de 3 materias FRSN)');
+
+    // 5.5. Profesores (con university_id)
+    const professor1 = new User({
+      username: 'prof-garcia',
+      name: 'María García',
+      password: 'prof123',
+      role: 'professor',
+      university_id: 'utn',
+      deleted: false,
+    });
+    await professor1.save();
+    users.push(professor1);
+    console.log('   ✅ professor: prof-garcia / prof123');
+
+    const professor2 = new User({
+      username: 'prof-lopez',
+      name: 'Juan López',
+      password: 'prof123',
+      role: 'professor',
+      university_id: 'utn',
+      deleted: false,
+    });
+    await professor2.save();
+    users.push(professor2);
+    console.log('   ✅ professor: prof-lopez / prof123');
+
+    const professor3 = new User({
+      username: 'prof-martinez',
+      name: 'Carlos Martínez',
+      password: 'prof123',
+      role: 'professor',
+      university_id: 'utn',
+      deleted: false,
+    });
+    await professor3.save();
+    users.push(professor3);
+    console.log('   ✅ professor: prof-martinez / prof123');
+
+    // 5.4. User (con university_id)
+    const regularUser = new User({
+      username: 'usuario',
+      name: 'Usuario Regular',
+      password: 'usuario123',
+      role: 'user',
+      university_id: 'utn',
+      deleted: false,
+    });
+    await regularUser.save();
+    users.push(regularUser);
+    console.log('   ✅ user: usuario / usuario123 (solo corrección)\n');
+
+    // 6. Crear comisiones para cada curso (SIN professor_name/email)
     console.log('👥 Creando comisiones...');
     const commissions = [];
     for (const course of courses) {
@@ -405,8 +567,7 @@ const seedDatabase = async () => {
           faculty_id: course.faculty_id,
           university_id: course.university_id,
           year: course.year,
-          professor_name: i === 1 ? 'Prof. Juan Pérez' : 'Prof. María González',
-          professor_email: i === 1 ? 'juan.perez@example.com' : 'maria.gonzalez@example.com',
+          professors: [], // Array vacío, se asignará después
         });
       }
     }
@@ -418,7 +579,7 @@ const seedDatabase = async () => {
     const rubrics = [];
 
     // Rúbrica 1: TP Listas (para todas las comisiones de Programación 1)
-    const prog1Commissions = createdCommissions.filter(c => c.course_id.includes('programacion-1'));
+    const prog1Commissions = createdCommissions.filter(c => c.course_id.endsWith('-programacion-1'));
     for (const commission of prog1Commissions) {
       const course = courses.find(c => c.course_id === commission.course_id);
       rubrics.push({
@@ -439,7 +600,7 @@ const seedDatabase = async () => {
 
     // Rúbrica 2: Parcial PythonForestal (solo para comisiones de Diseño de Sistemas en FRM)
     const designCommissions = createdCommissions.filter(
-      c => c.course_id.includes('disenio-de-sistemas') && c.faculty_id === 'frm'
+      c => c.course_id.endsWith('-disenio-de-sistemas') && c.faculty_id === 'frm'
     );
     for (const commission of designCommissions) {
       const course = courses.find(c => c.course_id === commission.course_id);
@@ -462,75 +623,40 @@ const seedDatabase = async () => {
     const createdRubrics = await Rubric.insertMany(rubrics);
     console.log(`✅ ${createdRubrics.length} rúbricas creadas\n`);
 
-    // 7. Crear usuarios de prueba para cada rol
-    console.log('👥 Creando usuarios de prueba para todos los roles...\n');
+    // 7. Asignar profesores a comisiones
+    console.log('👨‍🏫 Asignando profesores a comisiones...\n');
 
-    const users = [];
+    // Asignar prof-garcia a comisiones de Programación 1 en FRM
+    const frmProg1Commissions = createdCommissions.filter(c =>
+      c.faculty_id === 'frm' && c.course_id.endsWith('-programacion-1')
+    );
+    for (const commission of frmProg1Commissions) {
+      await commission.assignProfessor(professor1._id);
+      console.log(`   ✅ María García → ${commission.name}`);
+    }
 
-    // 7.1. Super Admin (sin university_id)
-    const superAdmin = new User({
-      username: 'superadmin',
-      name: 'Super Administrador',
-      password: 'admin123',
-      role: 'super-admin',
-      university_id: null, // Super-admin no necesita universidad
-      deleted: false,
-    });
-    await superAdmin.save();
-    users.push(superAdmin);
-    console.log('   ✅ super-admin: superadmin / admin123 (acceso global)');
+    // Asignar prof-lopez a comisiones de Programación 2 en FRM
+    const frmProg2Commissions = createdCommissions.filter(c =>
+      c.faculty_id === 'frm' && c.course_id.endsWith('-programacion-2')
+    );
+    for (const commission of frmProg2Commissions) {
+      await commission.assignProfessor(professor2._id);
+      console.log(`   ✅ Juan López → ${commission.name}`);
+    }
 
-    // 7.2. University Admin (con university_id)
-    const universityAdmin = new User({
-      username: 'admin-utn',
-      name: 'Administrador UTN',
-      password: 'admin123',
-      role: 'university-admin',
-      university_id: 'utn',
-      deleted: false,
-    });
-    await universityAdmin.save();
-    users.push(universityAdmin);
-    console.log('   ✅ university-admin: admin-utn / admin123 (gestiona UTN)');
-
-    // 7.3. Professor (con university_id)
-    const professor = new User({
-      username: 'prof-garcia',
-      name: 'María García',
-      password: 'prof123',
-      role: 'professor',
-      university_id: 'utn',
-      deleted: false,
-    });
-    await professor.save();
-    users.push(professor);
-    console.log('   ✅ professor: prof-garcia / prof123 (gestiona sus comisiones)');
-
-    // 7.4. User (con university_id)
-    const regularUser = new User({
-      username: 'usuario',
-      name: 'Usuario Regular',
-      password: 'usuario123',
-      role: 'user',
-      university_id: 'utn',
-      deleted: false,
-    });
-    await regularUser.save();
-    users.push(regularUser);
-    console.log('   ✅ user: usuario / usuario123 (solo corrección)\n');
-
-    // 7.5. Asignar profesor a algunas comisiones de FRM
-    console.log('👨‍🏫 Asignando profesor a comisiones...');
-    const frmCommissions = createdCommissions.filter(c => c.faculty_id === 'frm').slice(0, 3);
-    for (const commission of frmCommissions) {
-      await commission.assignProfessor(professor._id);
-      console.log(`   ✅ Prof. García asignado a: ${commission.name} (${commission.commission_id})`);
+    // Asignar prof-martinez a comisiones de Diseño de Sistemas en FRM
+    const frmDesignCommissions = createdCommissions.filter(c =>
+      c.faculty_id === 'frm' && c.course_id.endsWith('-disenio-de-sistemas')
+    );
+    for (const commission of frmDesignCommissions) {
+      await commission.assignProfessor(professor3._id);
+      console.log(`   ✅ Carlos Martínez → ${commission.name}`);
     }
     console.log('');
 
     // Resumen
     console.log('='.repeat(80));
-    console.log('✅ MIGRACIÓN COMPLETADA EXITOSAMENTE CON NUEVA JERARQUÍA!');
+    console.log('✅ MIGRACIÓN COMPLETADA EXITOSAMENTE - VERSIÓN 4.0 (ROLES JERÁRQUICOS)');
     console.log('='.repeat(80));
     console.log('📊 Resumen:');
     console.log(`   - Universidades: ${createdUniversities.length}`);
@@ -539,16 +665,30 @@ const seedDatabase = async () => {
     console.log(`   - Cursos: ${createdCourses.length}`);
     console.log(`   - Comisiones: ${createdCommissions.length}`);
     console.log(`   - Rúbricas: ${createdRubrics.length}`);
-    console.log(`   - Usuarios: ${users.length} (super-admin, university-admin, professor, user)`);
+    console.log(`   - Usuarios: ${users.length} (6 roles: super-admin, university-admin, faculty-admin, professor-admin, professor, user)`);
     console.log('='.repeat(80));
     console.log('\n📖 Estructura Jerárquica:');
     console.log('   Universidad → Facultad → Carrera → Materia (con año) → Comisión → Rúbrica (con tipo)');
     console.log('='.repeat(80));
-    console.log('\n🔐 Credenciales de acceso:');
-    console.log('   Super Admin:      superadmin  / admin123    (acceso global)');
-    console.log('   University Admin: admin-utn   / admin123    (gestiona UTN)');
-    console.log('   Professor:        prof-garcia / prof123     (3 comisiones asignadas)');
-    console.log('   User:             usuario     / usuario123  (solo corrección)');
+    console.log('\n🔐 Credenciales de acceso (V4 - ROLES JERÁRQUICOS):');
+    console.log('\n   🌍 SUPER-ADMIN (acceso global):');
+    console.log('      superadmin / admin123');
+    console.log('\n   🏫 UNIVERSITY-ADMIN (gestiona UTN completa):');
+    console.log('      admin-utn / admin123');
+    console.log('\n   🏛️  FACULTY-ADMIN (⭐ NUEVO V4 - gestiona su facultad):');
+    console.log('      admin-frm  / admin123  (gestiona FRM)  [first_login=true]');
+    console.log('      admin-frsn / admin123  (gestiona FRSN) [first_login=true]');
+    console.log('\n   👨‍🏫 PROFESSOR-ADMIN (⭐ NUEVO V4 - Jefes de Cátedra):');
+    console.log('      jefe-prog1-frm  / admin123  (Programación 1 FRM)    [first_login=true]');
+    console.log('      jefe-prog2-frm  / admin123  (Programación 2 FRM)    [first_login=true]');
+    console.log('      jefe-multi-frsn / admin123  (3 materias FRSN)       [first_login=true]');
+    console.log('\n   👨‍🏫 PROFESSORS (asignados a comisiones):');
+    console.log('      prof-garcia   / prof123  (Prog 1 FRM)');
+    console.log('      prof-lopez    / prof123  (Prog 2 FRM)');
+    console.log('      prof-martinez / prof123  (Diseño FRM)');
+    console.log('\n   👤 USER (solo corrección):');
+    console.log('      usuario / usuario123');
+    console.log('\n   ⚠️  NOTA: Usuarios con first_login=true DEBEN cambiar contraseña en primer acceso');
     console.log('='.repeat(80));
   } catch (error) {
     console.error('❌ Error en migración:', error);
