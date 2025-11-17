@@ -304,24 +304,26 @@
 - **FASE 12**: Frontend - Permisos y Filtros (100%)
 - **FASE 13**: Seguridad - Cambio de Contraseña Obligatorio (100%)
 - **FASE 14**: Seguridad - Desactivar Registro Público (100%)
+- **FASE 16.1**: Seed Database Actualizado (100%)
 
 ### ⏳ Fases Pendientes (2/7)
 
 #### FASE 15: Recuperación de Contraseña (⏸️ PENDIENTE DE DEFINIR)
 - Opciones a evaluar: Email automático vs Manual por admin
+- Estado: No bloqueante para continuar
 
-#### FASE 16: Testing Completo (4-5 días)
-- [ ] Actualizar seed con usuarios de nuevos roles
-- [ ] Testing manual de faculty-admin
-- [ ] Testing manual de professor-admin
-- [ ] Testing manual de professor (CRUD rúbricas)
-- [ ] Testing de aislamiento multi-tenant
-- [ ] Testing de cambio de contraseña
+#### FASE 16.2: Testing Manual Completo (4-5 días)
+- [ ] Testing de faculty-admin (crear carreras, cursos, usuarios)
+- [ ] Testing de professor-admin (CRUD rúbricas, gestionar comisiones)
+- [ ] Testing de professor (CRUD rúbricas solamente)
+- [ ] Testing de aislamiento multi-tenant (cada admin ve solo su scope)
+- [ ] Testing de cambio de contraseña obligatorio
+- [ ] Testing de creación jerárquica de usuarios
 
-#### FASE 17: Documentación (2-3 días)
+#### FASE 17: Documentación Final (2-3 días)
 - [ ] Actualizar README.md principal
-- [ ] Crear GUIA_ROLES_V4.md
-- [ ] Actualizar PENDIENTE.md
+- [ ] Crear GUIA_ROLES_V4.md con jerarquía completa
+- [ ] Actualizar GUIA_CONFIGURACION_Y_DESPLIEGUE.md
 
 ---
 
@@ -333,26 +335,30 @@
 3. ✅ **FASE 12**: Frontend - Permisos y tabs dinámicos
 4. ✅ **FASE 13**: Seguridad - Cambio de contraseña obligatorio
 5. ✅ **FASE 14**: Seguridad - Registro público desactivado
-6. ✅ Sistema de autenticación con 6 roles
-7. ✅ Helper de roles y permisos
-8. ✅ Títulos dinámicos en AdminPanel
-9. ✅ 6 Managers actualizados con multi-tenant avanzado
-10. ✅ **⭐ Professor puede hacer CRUD de rúbricas** (nuevo V4)
-11. ✅ Professor-admin gestiona comisiones y rúbricas de sus cursos
-12. ✅ Faculty-admin gestiona recursos de su facultad
-13. ✅ **🔒 Cambio de contraseña obligatorio en primer login**
-14. ✅ Modal reutilizable de cambio de contraseña
-15. ✅ Opción de cambio de contraseña en perfil
-16. ✅ **🚫 Solo admins pueden crear usuarios** (registro público desactivado)
-17. ✅ Documentación completa (FASE_12, FASE_13, FASE_14)
+6. ✅ **FASE 16.1**: Seed database actualizado con nuevos roles
+7. ✅ Sistema de autenticación con 6 roles
+8. ✅ Helper de roles y permisos (roleHelper.ts)
+9. ✅ Títulos dinámicos en AdminPanel
+10. ✅ 6 Managers actualizados con multi-tenant avanzado
+11. ✅ **⭐ Professor puede hacer CRUD de rúbricas** (nuevo V4)
+12. ✅ Professor-admin gestiona comisiones y rúbricas de sus cursos
+13. ✅ Faculty-admin gestiona recursos de su facultad
+14. ✅ **🔒 Cambio de contraseña obligatorio en primer login**
+15. ✅ Modal reutilizable de cambio de contraseña
+16. ✅ Opción de cambio de contraseña en perfil
+17. ✅ **🚫 Solo admins pueden crear usuarios** (registro público desactivado)
+18. ✅ Commit consolidado (FASES 10-14) - 48 archivos, 8174 inserciones
+19. ✅ Documentación completa (FASE_12, FASE_13, FASE_14)
+20. ✅ Documentación organizada (docs/completed-phases)
 
 ### ⏳ Tareas Pendientes (30%)
 - **FASE 15**: Recuperación de contraseña (⏸️ PENDIENTE DE DEFINIR)
-- **FASE 16**: Testing completo de nuevos roles (~4-5 días)
+- **FASE 16.2**: Testing manual completo (~4-5 días)
 - **FASE 17**: Documentación final (~2-3 días)
 
 **Estado:** Sistema funcional con roles jerárquicos, seguridad robusta y control total de acceso.
-**Próximo paso:** FASE 16 - Testing completo (FASE 15 pendiente de definir).
+**Próximo paso:** FASE 16.2 - Testing manual completo (FASE 15 pendiente de definir).
+**Commits:** Todo el trabajo está committeado en rama `feature/admin-multitenant`.
 
 ---
 

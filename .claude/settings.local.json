@@ -15,7 +15,11 @@
       "Bash(git mv:*)",
       "Bash(git rm:*)",
       "Bash(mv:*)",
-      "Bash(del nul 2)"
+      "Bash(del nul 2)",
+      "Bash(if not exist \"docs\\completed-phases\" mkdir docscompleted-phases)",
+      "Bash(move:*)",
+      "Bash(move FASE_13_COMPLETADA.md docscompleted-phases )",
+      "Bash(move FASE_14_COMPLETADA.md docscompleted-phases)"
     ],
     "deny": [],
     "ask": []
