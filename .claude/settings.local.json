@@ -19,7 +19,8 @@
       "Bash(if not exist \"docs\\completed-phases\" mkdir docscompleted-phases)",
       "Bash(move:*)",
       "Bash(move FASE_13_COMPLETADA.md docscompleted-phases )",
-      "Bash(move FASE_14_COMPLETADA.md docscompleted-phases)"
+      "Bash(move FASE_14_COMPLETADA.md docscompleted-phases)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []
