@@ -20,7 +20,11 @@
       "Bash(move:*)",
       "Bash(move FASE_13_COMPLETADA.md docscompleted-phases )",
       "Bash(move FASE_14_COMPLETADA.md docscompleted-phases)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(node -e:*)",
+      "Bash(python:*)",
+      "Bash(start \"Julián_Martín_Aciar_Valdez_devolucion.pdf\")",
+      "Bash(git reset:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,6 +1,6 @@
-# Sistema de Correccion Automatica con IA
+# Sistema de Corrección Automática con IA
 
-Sistema completo de correccion automatica de entregas academicas utilizando Inteligencia Artificial (Google Gemini), con panel de administracion, gestion de rubricas y automatizacion de flujos con n8n.
+Sistema completo de corrección automática de entregas académicas utilizando Inteligencia Artificial (Google Gemini), con panel de administración, gestión de rúbricas, sistema multi-tenant jerárquico y automatización de flujos con n8n.
 
 ---
 
@@ -41,10 +41,13 @@ Sistema integral para **automatizar la correccion de trabajos practicos, parcial
 
 ## Caracteristicas Principales
 
-### Sistema de Autenticacion y Roles
+### Sistema de Autenticación Multi-tenant Jerárquico
 - Login con JWT (JSON Web Tokens)
-- **Roles**: Administrador y Usuario normal
-- Proteccion de rutas segun permisos
+- **Roles jerárquicos**: Super Admin, University Admin, Faculty Admin, Career Admin, Course Admin, Commission Admin, y User
+- Cambio de contraseña obligatorio en primer login
+- Protección de rutas según permisos
+- Auto-filtrado de datos según contexto del usuario
+- Registro público desactivado (solo admins pueden crear usuarios)
 
 ### Panel de Administracion
 - **Gestion de Universidades**: CRUD completo con soft delete
@@ -248,15 +251,17 @@ cd n8n-workflows
 
 ### 5. Acceder al Sistema
 
-**Credenciales por defecto** (despues de ejecutar seed):
+**Credenciales por defecto** (después de ejecutar seed):
 
-- **Admin**:
+- **Super Admin**:
   - Usuario: `admin`
   - Contraseña: `admin123`
+  - **Nota**: Al primer login, se solicitará cambio de contraseña obligatorio
 
 - **Usuario normal**:
   - Usuario: `usuario`
   - Contraseña: `usuario123`
+  - **Nota**: Al primer login, se solicitará cambio de contraseña obligatorio
 
 **URLs**:
 - Frontend: `http://localhost:5173`
@@ -395,28 +400,41 @@ UserView -> Sube ZIP con todas las entregas -> n8n /automatico
 
 | Fase | Estado | Progreso | Fecha |
 |------|--------|----------|-------|
-| **Fase 1**: Backend - CRUD completo | Completada | 100% | 21/10/2025 |
-| **Fase 2**: Frontend - Componentes base | Completada | 100% | 21/10/2025 |
-| **Fase 3**: Admin Panel + UserView | Completada | 100% | 21/10/2025 |
-| **Fase 3.5**: CRUD de Usuarios | Completada | 100% | 22/10/2025 |
-| **Fase 4**: Integracion y Testing | Pendiente | 0% | - |
+| **Fase 1**: Backend - CRUD completo | Completada | 100% | 21/10/2024 |
+| **Fase 2**: Frontend - Componentes base | Completada | 100% | 21/10/2024 |
+| **Fase 3**: Admin Panel + UserView | Completada | 100% | 21/10/2024 |
+| **Fase 3.5**: CRUD de Usuarios | Completada | 100% | 22/10/2024 |
+| **Fase 10**: Backend - Sistema Multi-tenant Jerárquico | Completada | 100% | Nov 2025 |
+| **Fase 11**: Backend - Controllers y Rutas | Completada | 100% | Nov 2025 |
+| **Fase 12**: Frontend - Permisos y Filtros Dinámicos | Completada | 100% | Nov 2025 |
+| **Fase 13**: Seguridad - Cambio de Contraseña Obligatorio | Completada | 100% | Nov 2025 |
+| **Fase 14**: Seguridad - Desactivar Registro Público | Completada | 100% | Nov 2025 |
+| **Fase 15**: Testing Multi-tenant | Pendiente | 0% | - |
+| **Fase 16**: Frontend - Vistas Específicas por Rol | Completada | 100% | Nov 2025 |
+| **Fase 17**: Documentación y Deploy | Pendiente | 0% | - |
 
-**Progreso total**: 83% (29/35 tareas completadas)
+**Progreso total**: ~85% (FASES 1-14, 16 completadas; Fases 15, 17 pendientes)
 
 ### Funcionalidades Implementadas
 
-- Sistema de autenticacion JWT con roles
-- CRUD de Universidades
-- CRUD de Materias/Cursos
-- CRUD de Rubricas (JSON + PDF con IA)
-- CRUD de Usuarios (con soft delete y restauracion)
-- Generacion de rubricas desde PDF con Gemini AI
-- Correccion automatica de entregas con IA
+- Sistema de autenticación JWT con roles jerárquicos multi-tenant
+- Cambio de contraseña obligatorio en primer login
+- Registro público desactivado (solo admins)
+- CRUD de Universidades, Facultades, Carreras, Cursos y Comisiones
+- CRUD de Rúbricas (JSON + PDF con IA)
+- CRUD de Usuarios con roles jerárquicos
+- Permisos y filtros dinámicos según rol del usuario
+- Vistas específicas por rol (professor-admin, faculty-admin)
+- Layout subordinado para professor-admin (selector de materia → tabs)
+- Paneles informativos en modales para datos jerárquicos
+- Auto-filtrado de datos según contexto del usuario
+- Generación de rúbricas desde PDF con Gemini AI
+- Corrección automática de entregas con IA
 - Subida de resultados a Google Sheets
-- Correccion batch de multiples entregas
+- Corrección batch de múltiples entregas
 - Consolidador de proyectos
 - Soft delete en todos los modelos
-- Integracion completa Frontend - Backend - n8n
+- Integración completa Frontend - Backend - n8n
 
 ### Proximos Pasos (Fase 4)
 
@@ -635,6 +653,6 @@ Para problemas, sugerencias o consultas:
 
 ---
 
-**Ultima actualizacion**: Noviembre 2025
-**Version**: 1.0
-**Estado**: En desarrollo (83% completado)
+**Última actualización**: Noviembre 2025
+**Versión**: 1.0
+**Estado**: En desarrollo (~85% completado - FASES 1-14, 16)

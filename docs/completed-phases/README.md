@@ -35,6 +35,19 @@ Esta carpeta contiene la documentación detallada de cada fase completada del si
   - Login.tsx: link "Regístrate" oculto
   - Solo admins pueden crear usuarios
 
+### FASE_16_COMPLETADA.md
+**Frontend - Vistas Específicas por Rol (Professor-Admin y Faculty-Admin)**
+- Duración: ~2 días
+- Archivos modificados: 5
+- Principales cambios:
+  - **RubricsManager.tsx**: Filtros simplificados para professor-admin (solo comisión)
+  - **AdminPanel.tsx**: Layout subordinado con dos pasos (selector materia → tabs indentados)
+  - **CoursesManager.tsx**: Fix timing bug faculty-admin (useEffect espera user?.role)
+  - **CommissionsManager.tsx**: Paneles informativos en modales para ambos roles
+  - **CareersManager.tsx**: Paneles informativos para faculty-admin
+  - Patrón consistente: Paneles read-only + selectores limitados según rol
+  - Auto-filtrado de datos por contexto del usuario
+
 ## 🎯 Progreso General
 
 | Fase | Estado | Progreso |
@@ -45,10 +58,10 @@ Esta carpeta contiene la documentación detallada de cada fase completada del si
 | FASE 13 | ✅ Completada | 100% |
 | FASE 14 | ✅ Completada | 100% |
 | FASE 15 | ⏸️ Pendiente | 0% |
-| FASE 16 | 🔄 En progreso | 20% |
+| FASE 16 | ✅ Completada | 100% |
 | FASE 17 | ⏳ Pendiente | 0% |
 
-**Progreso Total:** ~70% del Plan V4
+**Progreso Total:** ~85% del Plan V4
 
 ## 📚 Documentos Relacionados
 
@@ -68,4 +81,4 @@ Los cambios de estas fases están incluidos en el commit:
 
 ---
 
-**Última actualización:** 17 de Noviembre, 2025
+**Última actualización:** 19 de Noviembre, 2025
