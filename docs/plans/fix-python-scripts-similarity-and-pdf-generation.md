@@ -268,16 +268,26 @@ El backend ejecutará el script Python usando `child_process` de Node.js.
   ```
 - [ ] Crear wrapper en Node.js: `backend/src/services/pythonDevolutionService.js`
   - Método `generateIndividualPdf(commissionId, rubricId, studentName, spreadsheetId)`:
+    - Validar que spreadsheetId no sea null/undefined
     - Ejecutar: `python generar_pdfs.py --commission-id X --rubric-id Y --spreadsheet-id Z --student-name "Juan" --n8n-webhook-url $N8N_WEBHOOK_GET_CORRECTIONS`
     - Leer PDF desde `./output/individual/`
     - Retornar buffer del PDF
   - Método `generateBatchPdfs(commissionId, rubricId, spreadsheetId)`:
+    - Validar que spreadsheetId no sea null/undefined
     - Ejecutar: `python generar_pdfs.py --commission-id X --rubric-id Y --spreadsheet-id Z --n8n-webhook-url $N8N_WEBHOOK_GET_CORRECTIONS`
     - Leer ZIP desde `./output/batch/`
     - Retornar buffer del ZIP
 - [ ] Actualizar `devolutionController.js` para:
-  - `downloadIndividualDevolutionPdf`: Usar nuevo servicio Python
-  - `downloadBatchDevolutionPdfs`: Usar nuevo servicio Python
+  - `downloadIndividualDevolutionPdf`:
+    - Obtener rúbrica de MongoDB
+    - Extraer spreadsheet_file_id
+    - Validar que exista (retornar error 400 si no)
+    - Pasar spreadsheet_file_id al servicio Python
+  - `downloadBatchDevolutionPdfs`:
+    - Obtener rúbrica de MongoDB
+    - Extraer spreadsheet_file_id
+    - Validar que exista (retornar error 400 si no)
+    - Pasar spreadsheet_file_id al servicio Python
 
 **Checks**:
 - [ ] Script Python adaptado y funcional
@@ -298,30 +308,59 @@ El backend ejecutará el script Python usando `child_process` de Node.js.
 
 ---
 
-### ⏳ FASE 5: Integración de Spreadsheet ID en Frontend
-**Objetivo**: Permitir que profesores configuren el spreadsheet ID de Google Sheets
+### ⏳ FASE 5: Integración de Spreadsheet ID en Backend y Frontend
+**Objetivo**: Conectar el spreadsheet_id de la rúbrica con el flujo de generación de PDFs
 
-#### Tareas
-- [ ] Agregar campo `google_sheets_spreadsheet_id` al modelo `Rubric`
-- [ ] Crear endpoint para actualizar spreadsheet ID:
+#### Estado del Modelo Rubric
+- ✅ Ya existe campo `spreadsheet_file_id` en el modelo Rubric
+- ✅ Ya existe campo `spreadsheet_file_url` en el modelo Rubric
+
+#### Tareas Backend
+- [ ] Modificar `devolutionController.js` para:
+  - Obtener la rúbrica desde MongoDB usando `rubricId`
+  - Extraer `spreadsheet_file_id` de la rúbrica
+  - Validar que exista el spreadsheet_file_id (retornar error 400 si no existe)
+  - Pasar `spreadsheet_file_id` al servicio Python
+- [ ] Crear endpoint para actualizar spreadsheet ID (si no existe):
   - `PUT /api/rubrics/:rubricId/spreadsheet`
-  - Body: `{ spreadsheet_id: "..." }`
-- [ ] Actualizar frontend (`ProfessorView.tsx`):
-  - Agregar input para configurar spreadsheet ID por rúbrica
-  - Mostrar botón "Configurar Planilla de Drive"
-  - Al hacer clic en "PDFs Devolución", verificar que exista spreadsheet ID
+  - Body: `{ spreadsheet_file_id: "...", spreadsheet_file_url: "..." }`
+  - Validar formato del spreadsheet_file_id
+- [ ] Modificar `pythonDevolutionService.js` para:
+  - Recibir `spreadsheetId` como parámetro
+  - Pasar `--spreadsheet-id` al script Python
+  - El script Python pasará este ID al webhook de N8N
+
+#### Tareas Frontend
+- [ ] Actualizar `ProfessorView.tsx`:
+  - Mostrar campo de spreadsheet_file_id de la rúbrica (solo lectura o editable)
+  - Agregar botón "⚙️ Configurar Planilla de Drive" junto a "PDFs Devolución"
+  - Modal para configurar spreadsheet_file_id:
+    - Input para pegar URL o ID de Google Sheets
+    - Extraer automáticamente el ID de la URL
+    - Guardar mediante endpoint PUT
+  - Validación antes de generar PDFs:
+    - Si no existe spreadsheet_file_id, mostrar alerta:
+      "Debes configurar la planilla de Google Sheets primero"
+    - Deshabilitar botón "PDFs Devolución" si no hay spreadsheet_file_id
+- [ ] Agregar indicador visual:
+  - ✅ verde si hay spreadsheet_file_id configurado
+  - ⚠️ amarillo si falta configurar
 
 **Checks**:
-- [ ] Campo agregado al modelo Rubric
-- [ ] Endpoint de configuración funcional
-- [ ] Frontend permite configurar spreadsheet ID
-- [ ] Validación de spreadsheet ID antes de generar PDFs
+- [ ] Backend obtiene spreadsheet_file_id de la rúbrica
+- [ ] Endpoint PUT para actualizar spreadsheet funcional
+- [ ] Frontend muestra estado de configuración
+- [ ] Modal de configuración funcional
+- [ ] Validación previene generar PDFs sin spreadsheet_file_id
+- [ ] Script Python recibe spreadsheet_file_id correctamente
 
-**Archivos a crear/modificar**:
-- `backend/src/models/Rubric.js` (modificar)
-- `backend/src/routes/rubricRoutes.js` (agregar ruta)
+**Archivos a modificar**:
+- `backend/src/controllers/devolutionController.js` (modificar)
+- `backend/src/services/pythonDevolutionService.js` (modificar)
+- `backend/src/routes/rubricRoutes.js` (agregar ruta PUT)
 - `backend/src/controllers/rubricController.js` (agregar método)
 - `frontend/src/components/professor/ProfessorView.tsx` (modificar)
+- `frontend/src/components/professor/ConfigureSpreadsheetModal.tsx` (crear nuevo componente)
 
 ---
 
@@ -443,10 +482,12 @@ El backend ejecutará el script Python usando `child_process` de Node.js.
 
 | Riesgo | Probabilidad | Impacto | Mitigación |
 |--------|--------------|---------|------------|
-| Credenciales de Google inválidas | Media | Alto | Validar credenciales en setup, mensajes claros de error |
+| Credenciales de Google inválidas | Media | Alto | Validar credenciales en N8N, mensajes claros de error |
+| Spreadsheet_file_id no configurado | Alta | Alto | Validación en frontend y backend, UI clara para configurar |
 | Performance lenta con muchos alumnos | Media | Medio | Implementar procesamiento batch con progreso |
-| Formato de planilla incorrecto | Alta | Medio | Documentar formato claramente, validar columnas antes de procesar |
+| Formato de planilla incorrecto | Alta | Medio | Documentar formato claramente, validar columnas en N8N |
 | Scripts Python fallan en producción | Baja | Alto | Testing exhaustivo, manejo de errores robusto |
+| N8N no está corriendo | Media | Alto | Verificar conexión antes de ejecutar, retry logic con timeout |
 
 ---
 
@@ -549,8 +590,8 @@ backend/
 - [x] Fase 1: Análisis completado ✅
 - [ ] Fase 2: N8N Workflow diseñado ✅ → Pendiente: Importar y activar
 - [ ] Fase 3: Script de similitud Python funcional
-- [ ] Fase 4: Script de PDFs Python funcional
-- [ ] Fase 5: Configuración de spreadsheet ID en frontend
+- [ ] Fase 4: Script de PDFs Python funcional (con obtención de spreadsheet_file_id)
+- [ ] Fase 5: Integración de spreadsheet_file_id en backend y frontend ⚠️ **CRÍTICO**
 - [ ] Fase 6: PDF individual por alumno implementado
 - [ ] Fase 7: Testing exhaustivo completado
 - [ ] Fase 8: Documentación completa
@@ -583,12 +624,16 @@ backend/
 - [ ] `backend/scripts/python/devolution/generar_pdfs.py` (adaptado)
 - [ ] `backend/src/services/pythonSimilarityService.js`
 - [ ] `backend/src/services/pythonDevolutionService.js`
+- [ ] `backend/src/controllers/devolutionController.js` (modificar para obtener spreadsheet_file_id)
+- [ ] `backend/src/controllers/rubricController.js` (agregar método PUT para spreadsheet)
+- [ ] `frontend/src/components/professor/ProfessorView.tsx` (agregar configuración de spreadsheet)
+- [ ] `frontend/src/components/professor/ConfigureSpreadsheetModal.tsx` (nuevo)
 - [ ] `docs/GOOGLE_SHEETS_SETUP.md`
 - [ ] `docs/PROFESSOR_GUIDE.md`
 
 ---
 
-**Última actualización**: 2025-12-04
+**Última actualización**: 2025-12-04 (Actualizado: spreadsheet_file_id flow)
 **Responsable**: Equipo de Desarrollo
-**Revisión**: Plan corregido con enfoque N8N
-**Estado**: ✅ Fase 1 completada, workflows N8N creados
+**Revisión**: Plan actualizado con flujo completo de spreadsheet_file_id
+**Estado**: ✅ Fase 1 completada, workflows N8N creados, Fase 5 ampliada
