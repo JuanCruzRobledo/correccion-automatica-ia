@@ -183,8 +183,8 @@ Sistema integral para **automatizar la correccion de trabajos practicos, parcial
 
 - **Node.js** >= 18.0.0
 - **MongoDB** (local o Atlas)
-- **n8n** (self-hosted o cloud)
-- **Cuenta de Google Cloud** (para Gemini API)
+- **n8n** (self-hosted o cloud) - **DEBE estar corriendo antes del seed**
+- **Cuenta de Google Cloud** (para Gemini API y Google Drive API)
 
 ### 1. Clonar el Repositorio
 
@@ -193,7 +193,30 @@ git clone <URL-del-repositorio>
 cd correcion-automatica
 ```
 
-### 2. Configurar Backend
+### 2. Configurar n8n (IMPORTANTE: hacer ANTES del seed)
+
+```bash
+cd n8n-workflows
+
+# Importar flujos en tu instancia de n8n
+# Ver: n8n-workflows/README.md para instrucciones detalladas
+
+# CRITICAL: Asegurarse de que n8n esté corriendo en http://localhost:5678
+# CRITICAL: Activar los 5 workflows de creación de carpetas:
+#   - create-university-folder
+#   - create-faculty-folder
+#   - create-career-folder
+#   - create-course-folder
+#   - create-commission-folder
+
+# Configurar en n8n las siguientes variables de entorno:
+# - GOOGLE_DRIVE_ROOT_FOLDER_ID (ID de tu carpeta raíz en Drive)
+# - GOOGLE_GEMINI_API_KEY (tu API key de Gemini)
+
+# Configurar credenciales de Google Drive OAuth2 en n8n
+```
+
+### 3. Configurar Backend
 
 ```bash
 cd proyecto-correccion/backend
@@ -209,8 +232,22 @@ cp .env.example .env
 # - N8N_RUBRIC_WEBHOOK_URL
 # - N8N_GRADING_WEBHOOK_URL
 # - N8N_SPREADSHEET_WEBHOOK_URL
+#
+# NUEVAS VARIABLES para creación de carpetas en Drive durante seed:
+# - SEED_CREATE_DRIVE_FOLDERS=true (true: crea carpetas en Drive, false: solo MongoDB)
+# - N8N_CREATE_UNIVERSITY_FOLDER_WEBHOOK
+# - N8N_CREATE_FACULTY_FOLDER_WEBHOOK
+# - N8N_CREATE_CAREER_FOLDER_WEBHOOK
+# - N8N_CREATE_COURSE_FOLDER_WEBHOOK
+# - N8N_CREATE_COMMISSION_FOLDER_WEBHOOK
 
-# Ejecutar seed para datos iniciales
+# Ejecutar seed para datos iniciales y estructura de Drive
+# IMPORTANTE: Asegúrate de que n8n esté corriendo ANTES de ejecutar el seed
+# El seed creará:
+#   - Estructura completa en MongoDB
+#   - Jerarquía de carpetas en Google Drive (si SEED_CREATE_DRIVE_FOLDERS=true)
+# Tiempo estimado: 3-5 minutos con Drive, 5-10 segundos sin Drive
+
 npm run seed
 
 # Iniciar backend
@@ -219,7 +256,15 @@ npm run dev
 
 **Backend corriendo en**: `http://localhost:5000`
 
-### 3. Configurar Frontend
+**Estructura creada por el seed:**
+- Universidad: UTN
+- Facultad: FRM (Facultad Regional Mendoza)
+- Carreras: Ingeniería en Sistemas + Tecnicatura en Programación
+- Materias: Programación 1, 2 y 3 (por carrera)
+- Comisiones: 4 comisiones por materia (24 en total)
+- Carpetas en Drive: ~82 carpetas (incluye subcarpetas Entregas y Rubricas)
+
+### 4. Configurar Frontend
 
 ```bash
 cd proyecto-correccion/frontend-correccion-automatica-n8n
@@ -240,32 +285,39 @@ npm run dev
 
 **Frontend corriendo en**: `http://localhost:5173`
 
-### 4. Configurar n8n
-
-```bash
-cd n8n-workflows
-
-# Importar flujos en tu instancia de n8n
-# Ver: n8n-workflows/README.md para instrucciones detalladas
-```
-
 ### 5. Acceder al Sistema
 
 **Credenciales por defecto** (después de ejecutar seed):
 
 - **Super Admin**:
-  - Usuario: `admin`
+  - Usuario: `superadmin`
   - Contraseña: `admin123`
   - **Nota**: Al primer login, se solicitará cambio de contraseña obligatorio
+
+- **Admin UTN**:
+  - Usuario: `admin-utn`
+  - Contraseña: `admin123`
+  - Gestiona toda la Universidad UTN
+
+- **Admin FRM**:
+  - Usuario: `admin-frm`
+  - Contraseña: `admin123`
+  - Gestiona Facultad Regional Mendoza
+
+- **Profesores**:
+  - Usuario: `prof-garcia` / `prof-lopez` / `prof-martinez`
+  - Contraseña: `prof123`
+  - Asignados a diferentes comisiones
 
 - **Usuario normal**:
   - Usuario: `usuario`
   - Contraseña: `usuario123`
-  - **Nota**: Al primer login, se solicitará cambio de contraseña obligatorio
+  - Solo puede corregir entregas
 
 **URLs**:
 - Frontend: `http://localhost:5173`
 - Backend API: `http://localhost:5000`
+- n8n: `http://localhost:5678` (debe estar corriendo)
 - Consolidador: `http://localhost:5173/consolidator` (publico)
 
 ---
@@ -590,6 +642,61 @@ curl http://localhost:5000/health
 - Verificar API key de Google Gemini
 - Verificar formato del PDF (maximo 10 paginas)
 - Revisar logs del workflow en n8n
+
+### Problemas con el Seed
+
+#### El seed falla con errores de Drive
+**Problema:** Al ejecutar `npm run seed`, aparecen errores relacionados con Google Drive o n8n.
+
+**Soluciones:**
+1. Verificar que n8n esté corriendo: `curl http://localhost:5678`
+2. Verificar que los 5 workflows de creación de carpetas estén activos en n8n
+3. Verificar las URLs de webhooks en `.env`:
+   ```bash
+   # Deben apuntar a tu instancia de n8n
+   N8N_CREATE_UNIVERSITY_FOLDER_WEBHOOK=http://localhost:5678/webhook/...
+   ```
+4. Verificar credenciales de Google Drive OAuth2 en n8n
+5. Verificar que `GOOGLE_DRIVE_ROOT_FOLDER_ID` esté configurado en n8n
+
+**Alternativa:** Si solo necesitas datos de prueba en MongoDB sin Drive:
+```bash
+# En backend/.env, cambiar:
+SEED_CREATE_DRIVE_FOLDERS=false
+```
+
+#### El seed crea carpetas duplicadas en Drive
+**Problema:** Al ejecutar el seed varias veces, se crean carpetas duplicadas en Google Drive.
+
+**Solución:**
+- Limpiar manualmente las carpetas en Google Drive antes de re-ejecutar el seed
+- O eliminar la carpeta raíz completa y volver a crearla
+- Los workflows de n8n actuales no verifican si la carpeta ya existe
+
+#### El seed es muy lento
+**Problema:** El seed tarda más de 10 minutos en completarse.
+
+**Causas posibles:**
+- Red lenta o Google Drive con alta latencia
+- Timeouts configurados muy altos en driveService.js
+- Demasiadas carpetas creándose simultáneamente
+
+**Solución:**
+- Verificar conexión a internet
+- Revisar logs de n8n para identificar qué está tardando
+- Considerar ejecutar el seed sin Drive (`SEED_CREATE_DRIVE_FOLDERS=false`) y crear carpetas manualmente después
+
+#### El seed falla a mitad de camino
+**Problema:** El seed se detiene con error después de crear algunas entidades.
+
+**Solución:**
+- Revisar logs para identificar en qué fase falló
+- Limpiar MongoDB: `mongosh` → `use correcion-automatica` → `db.dropDatabase()`
+- Limpiar carpetas creadas en Drive (si las hay)
+- Corregir el problema identificado en los logs
+- Volver a ejecutar `npm run seed`
+
+Para más detalles, ver: `docs/TROUBLESHOOTING.md`
 
 ---
 

@@ -1,8 +1,41 @@
 # 📋 PARA LA PRÓXIMA SESIÓN
 
-**Fecha de última actualización:** 17 de Noviembre, 2025
+**Fecha de última actualización:** 04 de Diciembre, 2025
 **Rama actual:** `feature/admin-multitenant`
 **Progreso:** 70% del Plan V4 completado
+
+---
+
+## 🎯 TAREA ACTUAL: IMPLEMENTAR SEED CON GOOGLE DRIVE
+
+### Nuevo Plan Activo: Integración del Seed con Drive
+
+Se ha creado un nuevo plan para hacer el proyecto 100% portable y fácil de ejecutar:
+
+**Documento:** `docs/plans/PLAN_SEED_CON_DRIVE_FOLDERS.md`
+
+**Objetivo:** Hacer que `npm run seed` cree automáticamente:
+- Estructura completa en MongoDB
+- Jerarquía de carpetas en Google Drive (~82 carpetas)
+
+**Alcance reducido del seed:**
+- Universidad: UTN
+- Facultad: FRM (Facultad Regional Mendoza)
+- Carreras: Ingeniería en Sistemas + Tecnicatura en Programación
+- Materias: Programación 1, 2 y 3 (por carrera)
+- Comisiones: 4 por materia (24 en total)
+
+**Estado:** ⏳ Pendiente de inicio
+**Estimado:** ~7 horas de implementación
+**Fases:** 8 fases con checklist detallado
+
+**Para comenzar:**
+```bash
+# Leer el plan completo
+cat docs/plans/PLAN_SEED_CON_DRIVE_FOLDERS.md
+
+# Comenzar con Fase 1: Preparación y Configuración
+```
 
 ---
 
