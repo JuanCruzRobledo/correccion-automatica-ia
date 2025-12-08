@@ -1,0 +1,8 @@
+# Ignorar datos de N8N (contienen credenciales)
+data/
+
+# Permitir estructura de carpetas
+!data/.gitkeep
+
+# Logs
+*.log

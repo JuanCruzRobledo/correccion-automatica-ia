@@ -40,7 +40,11 @@
       "Bash(if not exist \"docs\\completed\" mkdir docscompleted)",
       "Bash(mkdir:*)",
       "Bash(ls:*)",
-      "Bash(node scripts/checkCommissions.js:*)"
+      "Bash(node scripts/checkCommissions.js:*)",
+      "Bash(chmod:*)",
+      "Bash(docker run:*)",
+      "Bash(timeout:*)",
+      "Bash(docker logs:*)"
     ],
     "deny": [],
     "ask": []

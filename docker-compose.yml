@@ -1,0 +1,172 @@
+version: '3.8'
+
+# ============================================
+# Sistema de Corrección Automática
+# ============================================
+# Stack completo: Backend + Frontend + N8N
+# Base de datos: MongoDB Atlas (en la nube)
+
+services:
+  # ==========================================
+  # Backend API
+  # ==========================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: correcion-backend
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-5000}:80"
+    environment:
+      # Base de datos (MongoDB Atlas - compartida)
+      MONGODB_URI: ${MONGODB_URI}
+
+      # Server
+      PORT: 80
+      NODE_ENV: production
+
+      # JWT
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+
+      # Encryption
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+
+      # N8N Webhooks (URLs internas entre containers)
+      N8N_RUBRIC_WEBHOOK_URL: http://n8n:5678/webhook/rubrica
+      N8N_GRADING_WEBHOOK_URL: http://n8n:5678/webhook/corregir
+      N8N_SPREADSHEET_WEBHOOK_URL: http://n8n:5678/webhook/spreadsheet
+      N8N_BATCH_GRADING_WEBHOOK_URL: http://n8n:5678/webhook/automatico
+
+      # N8N Webhooks - Creación de carpetas
+      N8N_CREATE_UNIVERSITY_FOLDER_WEBHOOK: http://n8n:5678/webhook/create-university-folder
+      N8N_CREATE_FACULTY_FOLDER_WEBHOOK: http://n8n:5678/webhook/create-faculty-folder
+      N8N_CREATE_CAREER_FOLDER_WEBHOOK: http://n8n:5678/webhook/create-career-folder
+      N8N_CREATE_COURSE_FOLDER_WEBHOOK: http://n8n:5678/webhook/create-course-folder
+      N8N_CREATE_COMMISSION_FOLDER_WEBHOOK: http://n8n:5678/webhook/create-commission-folder
+      N8N_CREATE_SUBMISSION_FOLDER_WEBHOOK: http://n8n:5678/webhook/create-submission-folder
+
+      # CORS
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+
+    depends_on:
+      n8n:
+        condition: service_healthy
+
+    networks:
+      - correcion-network
+
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:80/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+
+  # ==========================================
+  # Frontend (React + Nginx)
+  # ==========================================
+  frontend:
+    build:
+      context: ./frontend-correccion-automatica-n8n
+      dockerfile: Dockerfile
+      args:
+        # Variables de entorno para build de Vite
+        VITE_API_URL: http://localhost:${BACKEND_PORT:-5000}
+        VITE_RUBRIC_WEBHOOK_URL: http://localhost:${N8N_PORT:-5678}/webhook/rubrica
+        VITE_GRADING_WEBHOOK_URL: http://localhost:${N8N_PORT:-5678}/webhook/corregir
+        VITE_SPREADSHEET_WEBHOOK_URL: http://localhost:${N8N_PORT:-5678}/webhook/spreadsheet
+        VITE_BATCH_GRADING_WEBHOOK_URL: http://localhost:${N8N_PORT:-5678}/webhook/automatico
+    container_name: correcion-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - correcion-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  # ==========================================
+  # N8N - Automatización de Workflows
+  # ==========================================
+  n8n:
+    # OPCIÓN 1: Imagen oficial (para desarrollo o primera configuración)
+    # Descomenta esto si aún no has creado tu imagen preconfigurada
+    image: n8nio/n8n:latest
+
+    # OPCIÓN 2: Imagen preconfigurada (para producción)
+    # Una vez que hayas seguido n8n/README-PRECONFIGURACION.md, comenta la línea anterior
+    # y descomenta esta línea con tu imagen personalizada:
+    # image: tu-usuario/n8n-correcion-automatica:latest
+
+    container_name: correcion-n8n
+    restart: unless-stopped
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    environment:
+      # Autenticación
+      N8N_BASIC_AUTH_ACTIVE: ${N8N_BASIC_AUTH_ACTIVE:-true}
+      N8N_BASIC_AUTH_USER: ${N8N_BASIC_AUTH_USER:-admin}
+      N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_AUTH_PASSWORD:-admin123}
+
+      # Webhooks
+      WEBHOOK_URL: ${WEBHOOK_URL:-http://localhost:5678}
+
+      # Red
+      N8N_HOST: 0.0.0.0
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+
+      # Zona horaria
+      GENERIC_TIMEZONE: ${TIMEZONE:-America/Argentina/Buenos_Aires}
+
+      # Ejecuciones
+      EXECUTIONS_DATA_SAVE_ON_SUCCESS: all
+      EXECUTIONS_DATA_PRUNE: true
+      EXECUTIONS_DATA_MAX_AGE: 336
+
+      # Logging
+      N8N_LOG_LEVEL: info
+      N8N_LOG_OUTPUT: console
+
+    volumes:
+      # IMPORTANTE: Esto es para desarrollo/primera configuración
+      # Si usas imagen preconfigurada (OPCIÓN 2), puedes comentar este volumen
+      - n8n_data:/home/node/.n8n
+
+      # Workflows disponibles para referencia (read-only)
+      - ./n8n/workflows:/workflows:ro
+
+    networks:
+      - correcion-network
+
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+# ==========================================
+# Networks
+# ==========================================
+networks:
+  correcion-network:
+    driver: bridge
+    name: correcion-network
+
+# ==========================================
+# Volumes
+# ==========================================
+volumes:
+  n8n_data:
+    driver: local
+    name: correcion_n8n_data

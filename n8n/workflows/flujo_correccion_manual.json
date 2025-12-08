@@ -1,0 +1,155 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "corregir",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -3392,
+        -96
+      ],
+      "id": "858d031e-2e37-4de5-934e-394c9168e6dc",
+      "name": "Corregir",
+      "webhookId": "10bedb69-6f95-4b32-9c30-db354eb020ff"
+    },
+    {
+      "parameters": {
+        "operation": "fromJson",
+        "binaryPropertyName": "rubric",
+        "destinationKey": "rubric",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -3168,
+        -96
+      ],
+      "id": "6b2877a1-413c-4849-a632-7300e2e2b244",
+      "name": "Pasar rubrica a Texto"
+    },
+    {
+      "parameters": {
+        "resource": "document",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "=Eres un corrector automático consistente y determinista. Tu única fuente de verdad es la rúbrica JSON provista.\nNo interpretes, no inventes criterios, no asignes puntos por intuición.\nTu objetivo es producir una calificación reproducible (entera 0–100) a partir de los criterios, pesos y penalizaciones definidos.\n\nEntradas\n\nRUBRICA PARA CORREGIR: {{ $('Pasar rubrica a Texto').item.json.toJsonString() }}\n\n\n\nentrega: contenido textual del examen o archivo del alumno (por ejemplo, código fuente).\n\n\nProceso de evaluación\n\nInterpretación de la rúbrica\n\nUsa exclusivamente los campos definidos en criteria, penalties, mandatory_fail_conditions.\n\nConsidera grading.total_points como el total máximo (por defecto 100).\n\nCada criterio tiene un weight (0..1). Su puntaje máximo es weight * total_points.\n\nEvaluación de criterios (nota_original)\n\nPara cada criterio:\n\nEvalúa objetivamente si la entrega cumple completamente (100%), parcialmente (50%) o no cumple (0%) según la descripción textual del criterio.\n\nMultiplica el grado de cumplimiento por el peso del criterio y por el total de puntos.\n\nSuma todos los puntajes parciales.\n\nRedondea el total al entero más cercano (usar half_up si se define).\n\nAsegura que nota_original sea un número entero entre 0 y 100.\n\nPenalizaciones\n\nRecorre los penalties.\n\nSi la entrega incurre en alguna penalización (por ejemplo, estructuras prohibidas, validaciones ausentes, mensajes incoherentes), resta el porcentaje indicado.\n\nAplica los descuentos multiplicativamente:\nnota_penalizada = nota_original * Π(1 - penalty_percent/100)\n\nSi mandatory_fail_conditions se cumple, recorta la nota final al máximo indicado (max_final_score del 10%, 15%, etc.).\n\nRedondea el resultado final al entero más cercano entre 0 y 100.\n\nrecomendaciones: ofrece acciones específicas y concretas (máx. 4 ítems) para mejorar esos criterios en una próxima entrega.\n\nConsistencia\n\nCada vez que se procese la misma entrega con la misma rúbrica, el resultado debe ser idéntico (determinismo total).\n\nNo uses sinónimos, intuición ni estilo narrativo.\n\nLos puntajes se basan exclusivamente en las frases de la rúbrica y sus pesos.\n\nSalida obligatoria\n\nDevuelve únicamente una salida con esta plantilla de ejemplo (NO HACE FALTA QUE SEAN LOS MISMOS CRITERIOS QUE LA PLANTILLA, LOS CRITERIOS DEBEN SER LOS criteria.id, LOS TITULOS LOS critaria.name, Y SU PUNTAJE criteria.weight NO UTILICES LOS TASK COMO CRITERIOS),\n\nEJEMPLO: \n\nRubrica -->\n    \"criteria\": [\n    {\n      \"id\": \"C1\",\n      \"name\": \"Correctitud funcional y lógica\",\n      \"weight\": 0.25\n    }\n    {\n      \"id\": \"C2\",\n      \"name\": \"Manipulación de Listas (Indexación, Slicing y Métodos)\",\n      \"weight\": 0.2\n    }\nDevolucion -->\n✅C1 — Correctitud funcional y lógica: 24 / 25 · El código es legible, está bien indentado, utiliza nombres de variables significativos y presenta una estructura lógica fácil de seguir.\n\n⚠️C2 — Manipulación de Listas (Indexación, Slicing y Métodos): 15 / 20 · Se implementan de manera incorrecta ciertas operaciones de las listas.\n\nDEBES MARCAR cada uno de los criterios con emoji segun su % de completitud para cada weight [✅ = 80% - 100%, ⚠️ = 60% - 79%, ❌ = 0% - 59%], ademas, al calificar cada criterio debes poner cuantos puntos obtuvo seguido de los puntos totales para ese criterio, ejemplo 10/15:\n\nHola 👋\n\nTu nota final es 8.\n\n📌 Resumen por criterios\n\n✅C1 — Implementación de Entidades del Dominio: 90 / 100 · Implementación de la mayoría de las entidades del dominio. Persona no es abstracta. Falta validación de DNI con regex en el constructor de Persona.\n\n❌C2 — Implementación de Lógica de Negocio (Service Pattern): 40 / 100 · Implementa la interface CitaService y la clase CitaManager, pero los métodos guardarCitas() y cargarCitas() están vacíos. No usa ConcurrentHashMap para thread-safety. No se implementan las validaciones completas en programarCita().\n\n❌C3 — Validaciones y Reglas de Negocio: 40 / 100 · Validación de fecha futura y costo positivo implementadas. No se validan la disponibilidad de médico/sala ni la compatibilidad de especialidades. Validación de DNI implementada. Validación de Matrícula implementada. Validaciones de strings no nulos/vacíos implementadas.\n\n⚠️C4 — Patrones de Diseño y Arquitectura: 70 / 100 · Patrón Service implementado (CitaService/CitaManager). Enums implementados (TipoSangre, EspecialidadMedica, EstadoCita). Persona no es abstracta, por lo que no se aplica Template Method. CitaManager centraliza la coordinación de citas. Separación de responsabilidades implementada. Uso apropiado de atributos final para datos core en Cita.\n\n✅C5 — Relaciones y Asociaciones entre Entidades: 80 / 100 · Relaciones Hospital ↔ Departamento y Hospital ↔ Paciente implementadas. Relación Departamento ↔ Medico implementada. Relación Departamento ↔ Sala implementada. Relación Paciente ↔ HistoriaClinica implementada. Relación Cita ↔ (Paciente, Medico, Sala) implementada. Prevención de duplicados implementada.\n\n❌C6 — Persistencia de Datos (CSV): 40 / 100 · Método toCsvString() en Cita implementado. Método fromCsvString() en Cita implementado. Métodos guardarCitas() y cargarCitas() en CitaManager no implementados.\n\n✅C7 — Programa Main - Demostración Completa: 80 / 100 · Inicialización de Hospital y Departamentos implementada. Registro de médicos con especialidades implementado. Registro de pacientes con historias clínicas implementado. Programación de citas implementada. Consultas del sistema implementadas. Persistencia no implementada. Validaciones no implementadas. Estadísticas implementadas. El programa se ejecuta sin errores.\n\n✅C8 — Calidad de Código y Buenas Prácticas: 100 / 100 · Nomenclatura correcta. Código bien estructurado. Encapsulación implementada. Manejo de excepciones implementado. Comentarios implementados. · Sin evidencia concreta ⇒ No se penaliza, sólo se recomienda.\n\n💡 Fortalezas detectadas\n\n🌟 Buen uso de Lombok para reducir el boilerplate code.\n🌟 Implementación de la mayoría de las entidades del dominio.\n\n🛠️ Recomendaciones\n\nEl proyecto presenta una buena estructura y organización, con un uso adecuado de JPA para la persistencia de datos. Sin embargo, la falta de implementación de la persistencia CSV y algunas validaciones críticas impactan negativamente en la nota final. Además, la clase Persona debe ser abstracta para cumplir con el patrón Template Method.\n\n",
+        "inputType": "binary",
+        "binaryPropertyName": "submission",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        -2944,
+        -96
+      ],
+      "id": "3863daf6-0a2b-4fa6-8d7d-7d9516e7fca9",
+      "name": "Corregir con IA",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "9NXpuKpoG8063PFw",
+          "name": "maty2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a3cfeea9-a8a0-4fc7-aa97-603c83d6d296",
+              "name": "respuesta",
+              "value": "={{ $json.content.parts[0].text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2720,
+        -96
+      ],
+      "id": "43585acf-6c70-4f4f-9eae-7ccbd1ee1bfe",
+      "name": "Setear respuesta de Gemini"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.respuesta }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -2496,
+        -96
+      ],
+      "id": "cbbb3478-de67-4e5c-906f-f5670cd80787",
+      "name": "Enviar correccion"
+    }
+  ],
+  "connections": {
+    "Corregir": {
+      "main": [
+        [
+          {
+            "node": "Pasar rubrica a Texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pasar rubrica a Texto": {
+      "main": [
+        [
+          {
+            "node": "Corregir con IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Corregir con IA": {
+      "main": [
+        [
+          {
+            "node": "Setear respuesta de Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Setear respuesta de Gemini": {
+      "main": [
+        [
+          {
+            "node": "Enviar correccion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f0981ae4c0ef6f915f0b46ae60edab85d4bd6cddc77dbd7c3bcb8e7a3ea6e2a7"
+  }
+}

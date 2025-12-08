@@ -1,0 +1,3384 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rubrica",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -192,
+        -32
+      ],
+      "id": "ca287feb-3f35-4bdc-a489-49d944422e5d",
+      "name": "Obtener PDF",
+      "webhookId": "851293a8-7d72-4d41-aefd-71523202dd64"
+    },
+    {
+      "parameters": {
+        "resource": "document",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "=Rol del sistema\nSos un asistente experto en evaluación académica que convierte instrucciones de trabajos prácticos y exámenes (en PDF) en rúbricas JSON estandarizadas, completas y verificables.\n\nObjetivo\nA partir del contenido del PDF provisto, generá una rúbrica en JSON que describa con precisión cómo evaluar la entrega, incluyendo criterios, pesos, penalizaciones y metadatos. La salida debe ser un único objeto JSON válido (sin texto adicional).\n\nEntrada\n\nUn PDF de trabajo práctico, examen parcial o examen final (puede tener listas, consignas, tablas, consignas numeradas, etc.).\n\nEl PDF puede contener: objetivos, consignas, resultados de aprendizaje, formato de entrega, lenguaje/tecnología requerida, criterios de corrección, puntajes, notas y restricciones.\n\nSalida (SOLO JSON, sin comentarios)\n\nUn objeto que siga el esquema canónico de abajo.\n\nCumplí todas las reglas de “Normas de salida” y “Validaciones”.\n\nEsquema canónico de la rúbrica (JSON Schema informal):\n\n{\n  \"rubric_id\": \"string-kebab-case\",\n  \"title\": \"string\",\n  \"version\": \"1.0\",\n  \"assessment_type\": \"tp | parcial | final\",\n  \"course\": \"string | null\",\n  \"language_or_stack\": [\"python\",\"java\",\"c\",\"sql\",\"web\", \"...\"],\n  \"submission\": {\n    \"single_file\": true,\n    \"accepted_extensions\": [\".py\", \".ipynb\", \".pdf\", \".zip\", \"...\"],\n    \"delivery_channel\": \"plataforma | email | repositorio | otro\",\n    \"constraints\": [\n      \"Reglas de entrega claras, p.ej. nombre de archivo, estructura, límite de páginas.\"\n    ]\n  },\n  \"grading\": {\n    \"policy\": \"weighted_average | sum\",\n    \"rounding\": \"half_up | half_even | none\",\n    \"total_points\": 100\n  },\n  \"criteria\": [\n    {\n      \"id\": \"C1\",\n      \"name\": \"string\",\n      \"weight\": 0.00,\n      \"description\": \"Qué se evalúa, con sub-pesos si corresponde\",\n      \"subcriteria\": [\n        { \"name\": \"string\", \"weight\": 0.00, \"evidence\": [\"qué evidencia mirar\"] }\n      ]\n    }\n    // C2, C3, ...\n  ],\n  \"global_descriptors\": {\n    \"Excelente\": \"90–100: ...\",\n    \"Muy Bueno\": \"80–89: ...\",\n    \"Aprobado\": \"60–79: ...\",\n    \"Insuficiente\": \"<60: ...\"\n  },\n  \"penalties\": [\n    { \"description\": \"string\", \"penalty_percent\": 0 }\n  ],\n  \"mandatory_fail_conditions\": [\n    {\n      \"pattern\": \"regex opcional para detectar condiciones de desaprobación\",\n      \"max_final_score\": 40,\n      \"reason\": \"string\"\n    }\n  ],\n  \"scoring_notes\": [\n    \"Instrucciones para la persona correctora\"\n  ],\n  \"tasks\": [\n    {\n      \"label\": \"T1\",\n      \"prompt_excerpt\": \"texto breve de la consigna correspondiente\",\n      \"points\": 0,\n      \"links_to_criteria\": [\"C1\",\"C3\"]\n    }\n  ],\n  \"metadata\": {\n    \"institution\": \"string | null\",\n    \"instructor\": \"string | null\",\n    \"date\": \"YYYY-MM-DD | null\",\n    \"source_pdf_title\": \"string | null\",\n    \"pages_parsed\": [1,2,3],\n    \"notes\": [\"cualquier observación relevante\"]\n  }\n}\n\nJSON válido: no incluyas texto fuera del objeto JSON, ni comentarios, ni comillas inteligentes.\n\nPesos: la suma de weight en criteria debe ser 1.0 (o muy cercano; si redondeás, usá rounding y ajustá el último criterio).\n\ntotal_points: por defecto 100 si el PDF no especifica otro.\n\nassessment_type:\n\n“tp” si es trabajo práctico;\n\n“parcial” o “final” si es examen (usa pistas del PDF: palabras clave como “examen”, “parcial”, “final”).\n\nlanguage_or_stack: inferí desde el PDF (p.ej., Python, SQL, Web). Si no hay pista, dejá lista vacía [].\n\nsubmission: inferí canales, formatos de archivo y restricciones de nombre/estructura. Si hay dudas, proponé valores razonables y marcá la inferencia en constraints.\n\ncriteria:\n\nDiseñá entre 4 y 7 criterios macro (p.ej., Correctitud, Cobertura de consignas, Calidad/Legibilidad, Eficiencia, Buenas prácticas, Pruebas, Presentación).\n\nPodés usar subcriteria con micro-pesos si el PDF detalla apartados/consignas.\n\nglobal_descriptors: proveé bandas cualitativas (Excelente, Muy Bueno, Aprobado, Insuficiente).\n\npenalties: extraé o proponga reglas comunes (plagio, formato incorrecto, ausencia de documentación, entrega fuera de término si aparece).\n\nmandatory_fail_conditions: si el PDF define prohibiciones (p.ej., librerías no permitidas), expresalas con pattern (regex) o con un descriptor claro.\n\ntasks: enumerá las consignas principales (T1, T2, …), con un extracto breve y puntos estimados si el PDF los da; si no, distribuí proporcionalmente.\n\nmetadata: completá lo que el PDF permita inferir (curso, cátedra, fecha estimada si figura, docente, etc.).\n\nPasos de extracción y razonamiento (hacer en silencio; no los incluyas en la salida):\n\nParseo del PDF: leé títulos, objetivos, resultados de aprendizaje, consignas numeradas, secciones de “Criterios de evaluación”, notas y “Entrega”.\n\nDetección de tipo (tp/parcial/final) y stack (lenguaje/tecnologías).\n\nMinería de consignas: listá tareas, subtareas, matrices/tablas y verbos operativos (crear, justificar, demostrar, implementar, probar).\n\nMapeo a criterios:\n\nSi hay criterios explícitos, respetalos y convertí sus pesos a proporciones que sumen 1.\n\nSi no hay, derivalos desde objetivos/resultados:\n\nCobertura de consignas (qué tanto cumple cada ítem).\n\nCorrectitud/validez (respuestas/implementaciones correctas).\n\nCalidad/claridad (legibilidad, estructura, nomenclatura).\n\nEficiencia/justificación (según el dominio).\n\nPruebas/verificación (casos de prueba, explicaciones).\n\nAsignación de pesos: distribuilos de forma defendible (ej.: Cobertura 0.35, Correctitud 0.30, Calidad 0.15, Eficiencia 0.10, Pruebas 0.10) si el PDF no define pesos.\n\nPenalizaciones y condiciones de desaprobación: extraelas del documento; si faltan, sugerí las académicamente estándar (p.ej., plagio = 0).\n\nValidación: asegurate que el JSON final es válido, que los pesos suman 1.0 y que tasks.links_to_criteria referencia IDs existentes.\n\nReglas de desambiguación\n\nSi el PDF es muy procedimental (p.ej., lista de ejercicios), priorizá criterios de Cobertura por ejercicio y Correctitud funcional.\n\nSi es teórico (parcial/final), priorizá Exactitud conceptual, Razonamiento y justificación, Claridad de desarrollo.\n\nSi se especifica un lenguaje (p.ej., Python), agregá criterios como Estilo y convenciones del lenguaje (PEP8, docstrings) y, si corresponde, Complejidad temporal/espacial.\n\nAnte falta de pesos, repartí proporcional a la importancia textual (títulos/énfasis) y ajustá a 1.0.\n\nSi hay múltiples modalidades de entrega, incluilas en accepted_extensions y documentá en submission.constraints.\n\nValidaciones antes de devolver\n\n✔ El JSON parsea.\n\n✔ criteria[*].weight suma 1.0 (±0.001).\n\n✔ No hay campos vacíos con \"\" donde debería ir null o listas vacías.\n\n✔ tasks[*].links_to_criteria sólo contiene IDs existentes.\n\n✔ mandatory_fail_conditions sólo si corresponde (sino []).\n\nEjemplo de uso (no lo incluyas en la salida real)\n\nDado un PDF de listas en Python con consignas numeradas y objetivos de aprendizaje, inferí criterios como Correctitud, Uso de listas, Validación/Errores, Legibilidad, Eficiencia; asigná pesos que sumen 1; extraé tareas T1…Tn desde cada consigna y enlazalas a los criterios pertinentes; definí penalizaciones por incumplimientos de formato o malas prácticas. (Ejemplo ilustrativo inspirado en los archivos provistos.)",
+        "inputType": "binary",
+        "binaryPropertyName": "pdf",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        32,
+        -32
+      ],
+      "id": "21e4c002-3309-4498-b688-fe27c9c86f75",
+      "name": "Analyze document",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "9NXpuKpoG8063PFw",
+          "name": "maty2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.rubric_raw }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        480,
+        -32
+      ],
+      "id": "8c9fb31e-93cc-40ca-8480-f1bd37521c26",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  // Tomá el texto tal cual: ajustá según dónde venga (content.parts[0].text, etc.)\n  const maybeText =\n    item.json?.content?.parts?.[0]?.text ??\n    item.json?.text ??\n    item.json;\n\n  const text = typeof maybeText === \"string\" ? maybeText : JSON.stringify(maybeText);\n\n  // Solo quitar ```json ... ``` o ``` ... ```\n  let m = text.match(/```json\\s*([\\s\\S]*?)```/i);\n  if (!m) m = text.match(/```\\s*([\\s\\S]*?)```/);\n\n  if (!m) {\n    throw new Error(\"No se encontró un bloque entre ```...``` en la respuesta.\");\n  }\n\n  item.json.rubric_raw = m[1].trim(); // <- string JSON sin fences\n  return item;\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        256,
+        -32
+      ],
+      "id": "ca27158a-56ec-49af-bcb4-7a66cd6514b9",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "spreadsheet",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -192,
+        864
+      ],
+      "id": "ec91142e-1644-4ba4-af6d-a11ec8e5d348",
+      "name": "Subir a planilla",
+      "webhookId": "de13413b-0449-4496-afd0-bdef7a766824"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d6e97a34-726c-4e2c-aef0-4a6c6488694f",
+              "name": "spreadsheet_url",
+              "value": "={{ $json.body.spreadsheet_url }}",
+              "type": "string"
+            },
+            {
+              "id": "389f0e10-fa50-4109-bb96-419420a8a78a",
+              "name": "sheet_name",
+              "value": "={{ $json.body.sheet_name }}",
+              "type": "string"
+            },
+            {
+              "id": "2ad720a6-9f1a-494d-8b14-ea243e393265",
+              "name": "alumno",
+              "value": "={{ $json.body.alumno }}",
+              "type": "string"
+            },
+            {
+              "id": "4a422a32-d51c-4dad-811d-7da4ab3d370d",
+              "name": "nota",
+              "value": "={{ $json.body.nota }}",
+              "type": "string"
+            },
+            {
+              "id": "12eeead6-0e74-4570-ae9b-07cc686913a2",
+              "name": "resumen_por_criterios",
+              "value": "={{ $json.body.resumen_por_criterios }}",
+              "type": "string"
+            },
+            {
+              "id": "d1e1e14f-2311-4332-a17f-b85748bce25b",
+              "name": "fortalezas",
+              "value": "={{ $json.body.fortalezas }}",
+              "type": "string"
+            },
+            {
+              "id": "33ece7f9-a55b-4e30-bbce-b0961e7dcd91",
+              "name": "recomendaciones",
+              "value": "={{ $json.body.recomendaciones }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        32,
+        864
+      ],
+      "id": "6da940e5-8ddc-4c3b-8b87-be4f3710c4f1",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "Hecho ✅",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1376,
+        864
+      ],
+      "id": "1b4a1ed1-2417-434f-8e01-a715c30880a8",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Edit Fields').item.json.spreadsheet_url }}",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $('Edit Fields').item.json.sheet_name }}",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "alumno"
+          ],
+          "schema": [
+            {
+              "id": "alumno",
+              "displayName": "alumno",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "nota",
+              "displayName": "nota",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "resumen_por_criterios",
+              "displayName": "resumen_por_criterios",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "fortalezas",
+              "displayName": "fortalezas",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "recomendaciones",
+              "displayName": "recomendaciones",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        480,
+        864
+      ],
+      "id": "03b5d30d-d5b4-45bf-bb4c-96c0ece02b0f",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "a188IOItKn6BhSCO",
+          "name": "Google Sheets account 2"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Edit Fields').item.json.spreadsheet_url }}",
+          "mode": "url"
+        },
+        "title": "={{ $('Edit Fields').item.json.sheet_name }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        704,
+        936
+      ],
+      "id": "7ea9d4f4-0d64-41a1-a4b7-a335b59a4fd7",
+      "name": "Create sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "a188IOItKn6BhSCO",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Edit Fields').item.json.spreadsheet_url }}",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $('Edit Fields').item.json.sheet_name }}",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "alumno"
+          ],
+          "schema": [
+            {
+              "id": "alumno",
+              "displayName": "alumno",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "nota",
+              "displayName": "nota",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "resumen_por_criterios",
+              "displayName": "resumen_por_criterios",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "fortalezas",
+              "displayName": "fortalezas",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "recomendaciones",
+              "displayName": "recomendaciones",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1152,
+        936
+      ],
+      "id": "0b3c56a6-9f06-4ed7-9af4-ab5c22eba1c0",
+      "name": "Append or update row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "a188IOItKn6BhSCO",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4dc0fdc8-00a9-4e7a-b42c-dbe998f0cf25",
+              "name": "alumno",
+              "value": "={{ $json.alumno }}",
+              "type": "string"
+            },
+            {
+              "id": "78e633ca-c324-4c74-a18e-b40b408ab037",
+              "name": "nota",
+              "value": "={{ $json.nota }}",
+              "type": "string"
+            },
+            {
+              "id": "f046d23e-c913-46bc-ada0-b89ede6809f8",
+              "name": "resumen_por_criterios",
+              "value": "={{ $json.resumen_por_criterios }}",
+              "type": "string"
+            },
+            {
+              "id": "836d4001-2cf6-472b-84bf-e1a5393e8fd5",
+              "name": "fortalezas",
+              "value": "={{ $json.fortalezas }}",
+              "type": "string"
+            },
+            {
+              "id": "6fb8287e-de48-4bce-bc4d-4fc93a7e574b",
+              "name": "recomendaciones",
+              "value": "={{ $json.recomendaciones }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        256,
+        864
+      ],
+      "id": "8fdceca0-f954-4b54-bdd1-2d9e5c665c26",
+      "name": "Sheets"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4dc0fdc8-00a9-4e7a-b42c-dbe998f0cf25",
+              "name": "alumno",
+              "value": "={{ $('Sheets').item.json.alumno }}",
+              "type": "string"
+            },
+            {
+              "id": "78e633ca-c324-4c74-a18e-b40b408ab037",
+              "name": "nota",
+              "value": "={{ $('Sheets').item.json.nota }}",
+              "type": "string"
+            },
+            {
+              "id": "f046d23e-c913-46bc-ada0-b89ede6809f8",
+              "name": "resumen_por_criterios",
+              "value": "={{ $('Sheets').item.json.resumen_por_criterios }}",
+              "type": "string"
+            },
+            {
+              "id": "836d4001-2cf6-472b-84bf-e1a5393e8fd5",
+              "name": "fortalezas",
+              "value": "={{ $('Sheets').item.json.fortalezas }}",
+              "type": "string"
+            },
+            {
+              "id": "6fb8287e-de48-4bce-bc4d-4fc93a7e574b",
+              "name": "recomendaciones",
+              "value": "={{ $('Sheets').item.json.recomendaciones }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        928,
+        936
+      ],
+      "id": "ffd073dd-a3d3-45b2-a732-9b73f460c2a5",
+      "name": "Sheets1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "corregir",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -192,
+        416
+      ],
+      "id": "fc3caa37-ac96-486f-b6cc-0d27fd27c39d",
+      "name": "Corregir",
+      "webhookId": "10bedb69-6f95-4b32-9c30-db354eb020ff"
+    },
+    {
+      "parameters": {
+        "operation": "fromJson",
+        "binaryPropertyName": "rubric",
+        "destinationKey": "rubric",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        32,
+        416
+      ],
+      "id": "acd114aa-22e8-4870-be0b-9f33d9c92196",
+      "name": "Pasar rubrica a Texto"
+    },
+    {
+      "parameters": {
+        "resource": "document",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "=Eres un corrector automático consistente y determinista. Tu única fuente de verdad es la rúbrica JSON provista.\nNo interpretes, no inventes criterios, no asignes puntos por intuición.\nTu objetivo es producir una calificación reproducible (entera 0–100) a partir de los criterios, pesos y penalizaciones definidos.\n\nEntradas\n\nRUBRICA PARA CORREGIR: {{ $('Pasar rubrica a Texto').item.json.toJsonString() }}\n\n\n\nentrega: contenido textual del examen o archivo del alumno (por ejemplo, código fuente).\n\n\nProceso de evaluación\n\nInterpretación de la rúbrica\n\nUsa exclusivamente los campos definidos en criteria, penalties, mandatory_fail_conditions.\n\nConsidera grading.total_points como el total máximo (por defecto 100).\n\nCada criterio tiene un weight (0..1). Su puntaje máximo es weight * total_points.\n\nEvaluación de criterios (nota_original)\n\nPara cada criterio:\n\nEvalúa objetivamente si la entrega cumple completamente (100%), parcialmente (50%) o no cumple (0%) según la descripción textual del criterio.\n\nMultiplica el grado de cumplimiento por el peso del criterio y por el total de puntos.\n\nSuma todos los puntajes parciales.\n\nRedondea el total al entero más cercano (usar half_up si se define).\n\nAsegura que nota_original sea un número entero entre 0 y 100.\n\nPenalizaciones\n\nRecorre los penalties.\n\nSi la entrega incurre en alguna penalización (por ejemplo, estructuras prohibidas, validaciones ausentes, mensajes incoherentes), resta el porcentaje indicado.\n\nAplica los descuentos multiplicativamente:\nnota_penalizada = nota_original * Π(1 - penalty_percent/100)\n\nSi mandatory_fail_conditions se cumple, recorta la nota final al máximo indicado (max_final_score del 10%, 15%, etc.).\n\nRedondea el resultado final al entero más cercano entre 0 y 100.\n\nrecomendaciones: ofrece acciones específicas y concretas (máx. 4 ítems) para mejorar esos criterios en una próxima entrega.\n\nConsistencia\n\nCada vez que se procese la misma entrega con la misma rúbrica, el resultado debe ser idéntico (determinismo total).\n\nNo uses sinónimos, intuición ni estilo narrativo.\n\nLos puntajes se basan exclusivamente en las frases de la rúbrica y sus pesos.\n\nSalida obligatoria\n\nDevuelve únicamente una salida con esta plantilla de ejemplo (NO HACE FALTA QUE SEAN LOS MISMOS CRITERIOS QUE LA PLANTILLA, LOS CRITERIOS DEBEN SER LOS criteria.id, LOS TITULOS LOS critaria.name, Y SU PUNTAJE criteria.weight NO UTILICES LOS TASK COMO CRITERIOS),\n\nEJEMPLO: \n\nRubrica -->\n    \"criteria\": [\n    {\n      \"id\": \"C1\",\n      \"name\": \"Correctitud funcional y lógica\",\n      \"weight\": 0.25\n    }\n    {\n      \"id\": \"C2\",\n      \"name\": \"Manipulación de Listas (Indexación, Slicing y Métodos)\",\n      \"weight\": 0.2\n    }\nDevolucion -->\n✅C1 — Correctitud funcional y lógica: 24 / 25 · El código es legible, está bien indentado, utiliza nombres de variables significativos y presenta una estructura lógica fácil de seguir.\n\n⚠️C2 — Manipulación de Listas (Indexación, Slicing y Métodos): 15 / 20 · Se implementan de manera incorrecta ciertas operaciones de las listas.\n\nDEBES MARCAR cada uno de los criterios con emoji segun su % de completitud para cada weight [✅ = 80% - 100%, ⚠️ = 60% - 79%, ❌ = 0% - 59%], ademas, al calificar cada criterio debes poner cuantos puntos obtuvo seguido de los puntos totales para ese criterio, ejemplo 10/15:\n\nHola 👋\n\nTu nota final es 8.\n\n📌 Resumen por criterios\n\n✅C1 — Implementación de Entidades del Dominio: 90 / 100 · Implementación de la mayoría de las entidades del dominio. Persona no es abstracta. Falta validación de DNI con regex en el constructor de Persona.\n\n❌C2 — Implementación de Lógica de Negocio (Service Pattern): 40 / 100 · Implementa la interface CitaService y la clase CitaManager, pero los métodos guardarCitas() y cargarCitas() están vacíos. No usa ConcurrentHashMap para thread-safety. No se implementan las validaciones completas en programarCita().\n\n❌C3 — Validaciones y Reglas de Negocio: 40 / 100 · Validación de fecha futura y costo positivo implementadas. No se validan la disponibilidad de médico/sala ni la compatibilidad de especialidades. Validación de DNI implementada. Validación de Matrícula implementada. Validaciones de strings no nulos/vacíos implementadas.\n\n⚠️C4 — Patrones de Diseño y Arquitectura: 70 / 100 · Patrón Service implementado (CitaService/CitaManager). Enums implementados (TipoSangre, EspecialidadMedica, EstadoCita). Persona no es abstracta, por lo que no se aplica Template Method. CitaManager centraliza la coordinación de citas. Separación de responsabilidades implementada. Uso apropiado de atributos final para datos core en Cita.\n\n✅C5 — Relaciones y Asociaciones entre Entidades: 80 / 100 · Relaciones Hospital ↔ Departamento y Hospital ↔ Paciente implementadas. Relación Departamento ↔ Medico implementada. Relación Departamento ↔ Sala implementada. Relación Paciente ↔ HistoriaClinica implementada. Relación Cita ↔ (Paciente, Medico, Sala) implementada. Prevención de duplicados implementada.\n\n❌C6 — Persistencia de Datos (CSV): 40 / 100 · Método toCsvString() en Cita implementado. Método fromCsvString() en Cita implementado. Métodos guardarCitas() y cargarCitas() en CitaManager no implementados.\n\n✅C7 — Programa Main - Demostración Completa: 80 / 100 · Inicialización de Hospital y Departamentos implementada. Registro de médicos con especialidades implementado. Registro de pacientes con historias clínicas implementado. Programación de citas implementada. Consultas del sistema implementadas. Persistencia no implementada. Validaciones no implementadas. Estadísticas implementadas. El programa se ejecuta sin errores.\n\n✅C8 — Calidad de Código y Buenas Prácticas: 100 / 100 · Nomenclatura correcta. Código bien estructurado. Encapsulación implementada. Manejo de excepciones implementado. Comentarios implementados. · Sin evidencia concreta ⇒ No se penaliza, sólo se recomienda.\n\n💡 Fortalezas detectadas\n\n🌟 Buen uso de Lombok para reducir el boilerplate code.\n🌟 Implementación de la mayoría de las entidades del dominio.\n\n🛠️ Recomendaciones\n\nEl proyecto presenta una buena estructura y organización, con un uso adecuado de JPA para la persistencia de datos. Sin embargo, la falta de implementación de la persistencia CSV y algunas validaciones críticas impactan negativamente en la nota final. Además, la clase Persona debe ser abstracta para cumplir con el patrón Template Method.\n\n",
+        "inputType": "binary",
+        "binaryPropertyName": "submission",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        256,
+        416
+      ],
+      "id": "c044f110-a517-4be9-a8b9-8d5f955c9577",
+      "name": "Corregir con IA",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "9NXpuKpoG8063PFw",
+          "name": "maty2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a3cfeea9-a8a0-4fc7-aa97-603c83d6d296",
+              "name": "respuesta",
+              "value": "={{ $json.content.parts[0].text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        416
+      ],
+      "id": "c3f80605-4451-45ce-a3dd-15c60d99ea06",
+      "name": "Setear respuesta de Gemini"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.respuesta }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        704,
+        416
+      ],
+      "id": "809d0e02-1278-40e5-822b-f43f518299b4",
+      "name": "Enviar correccion"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "create-faculty-folder",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -192,
+        640
+      ],
+      "id": "a7002c70-bb82-4f89-959a-bea3fdee0103",
+      "name": "Webhook - Create Faculty",
+      "webhookId": "d9b9ce35-43a7-47c0-9ff1-8a9b458f9c36"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "faculty_id",
+              "value": "={{ $json.body.faculty_id }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "university_id",
+              "value": "={{ $json.body.university_id }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "root_folder_url",
+              "value": "=https://drive.google.com/drive/u/0/folders/15vLtHZZyy1Fxs5S94lNmUjYdti3Tof-6",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        32,
+        640
+      ],
+      "id": "44b49d32-c4f3-423f-8d3a-5a636b793404",
+      "name": "Set Variables"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $json.university_id }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.root_folder_url }}",
+            "mode": "url",
+            "__regex": "https:\\/\\/drive\\.google\\.com(?:\\/.*|)\\/folders\\/([0-9a-zA-Z\\-_]+)(?:\\/.*|)"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        256,
+        640
+      ],
+      "id": "8c9eb3a7-fbc8-4545-8905-3e4836d9dc6b",
+      "name": "Search University Folder",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $('Set Variables').item.json.faculty_id }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        480,
+        640
+      ],
+      "id": "3c66f19a-b8ef-44af-bdbd-6e23e3c60a08",
+      "name": "Create Folder in Drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, folder_name: $json.name, folder_id: $json.id, message: 'Carpeta de facultad creada exitosamente' } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        704,
+        640
+      ],
+      "id": "f68205f0-642a-4589-a67a-0ad1c4583f60",
+      "name": "Respond Success"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "create-career-folder",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -192,
+        1160
+      ],
+      "id": "f5e0c7df-cfc8-4bec-afd8-bbc1f35e3b77",
+      "name": "Webhook - Create Career",
+      "webhookId": "bdc55ab3-bb59-498e-8165-904e9efe04bc"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('Set Variables2').item.json.faculty_id }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        480,
+        1160
+      ],
+      "id": "9acc1594-a3fc-4ef1-8a28-ee92b9b77967",
+      "name": "Search Faculty Folder",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "career_id",
+              "value": "={{ $json.body.career_id }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "faculty_id",
+              "value": "={{ $json.body.faculty_id }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "university_id",
+              "value": "={{ $json.body.university_id }}",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "root_folder_url",
+              "value": "=https://drive.google.com/drive/u/0/folders/15vLtHZZyy1Fxs5S94lNmUjYdti3Tof-6",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        32,
+        1160
+      ],
+      "id": "c2f72f0d-1d3f-43b7-9240-cf760a07728e",
+      "name": "Set Variables2"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $json.university_id }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.root_folder_url }}",
+            "mode": "url",
+            "__regex": "https:\\/\\/drive\\.google\\.com(?:\\/.*|)\\/folders\\/([0-9a-zA-Z\\-_]+)(?:\\/.*|)"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        256,
+        1160
+      ],
+      "id": "379d1a60-cea6-4d37-bdb3-4335a45ada75",
+      "name": "Search University Folder1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $('Set Variables2').item.json.career_id }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        704,
+        1160
+      ],
+      "id": "649c9244-b3cb-471e-875c-22a0335ef2fe",
+      "name": "Create Folder in Drive2",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, folder_name: $json.name, folder_id: $json.id, message: 'Carpeta de carrera creada exitosamente' } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        928,
+        1160
+      ],
+      "id": "320568fd-3efe-4075-a97b-84c383e7ee86",
+      "name": "Respond Success2"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "create-course-folder",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -192,
+        1384
+      ],
+      "id": "0a2752cf-7676-478c-affd-b4708a164412",
+      "name": "Webhook - Create Course",
+      "webhookId": "d64e4bcc-a123-44f3-9f01-93bc260f50da"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('Set Variables3').item.json.career_id }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        704,
+        1384
+      ],
+      "id": "c09c311f-a958-46d4-914d-e6e81dd2de7d",
+      "name": "Search Career Folder",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "course_id",
+              "value": "={{ $json.body.course_id }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "career_id",
+              "value": "={{ $json.body.career_id }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "faculty_id",
+              "value": "={{ $json.body.faculty_id }}",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "university_id",
+              "value": "={{ $json.body.university_id }}",
+              "type": "string"
+            },
+            {
+              "id": "5",
+              "name": "root_folder_url",
+              "value": "=https://drive.google.com/drive/u/0/folders/15vLtHZZyy1Fxs5S94lNmUjYdti3Tof-6",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        32,
+        1384
+      ],
+      "id": "9cbd5448-b7d0-4728-94e7-cc91b0f21a57",
+      "name": "Set Variables3"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $json.university_id }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.root_folder_url }}",
+            "mode": "url",
+            "__regex": "https:\\/\\/drive\\.google\\.com(?:\\/.*|)\\/folders\\/([0-9a-zA-Z\\-_]+)(?:\\/.*|)"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        256,
+        1384
+      ],
+      "id": "e6ba975c-4e7b-4f6a-9c64-f75909871004",
+      "name": "Search University Folder2",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('Set Variables3').item.json.faculty_id }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        480,
+        1384
+      ],
+      "id": "eabf4c46-073d-4d97-8cb2-371c30d2b074",
+      "name": "Search Faculty Folder1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $('Set Variables3').item.json.course_id }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        928,
+        1384
+      ],
+      "id": "92bec00c-8a9d-47cf-af79-6c2bd7563111",
+      "name": "Create Folder in Drive3",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, folder_name: $json.name, folder_id: $json.id, message: 'Carpeta de curso creada exitosamente' } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1152,
+        1384
+      ],
+      "id": "fbf0b43d-7d2e-41e5-afb8-9721cfe01d3c",
+      "name": "Respond Success3"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "create-university-folder",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -192,
+        192
+      ],
+      "id": "c5e8c5c9-06ac-4fef-a6d5-00661f8431c5",
+      "name": "Webhook - Create University",
+      "webhookId": "6696f835-598b-4890-bd81-ac9cfdc8294a"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "university_id",
+              "value": "={{ $json.body.university_id }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "root_folder_url",
+              "value": "=https://drive.google.com/drive/u/0/folders/15vLtHZZyy1Fxs5S94lNmUjYdti3Tof-6",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        32,
+        192
+      ],
+      "id": "43f9ef5f-8c34-4422-b93c-48e50d693232",
+      "name": "Set Variables1"
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $json.university_id }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "={{ $json.root_folder_url }}",
+          "__regex": "https:\\/\\/drive\\.google\\.com(?:\\/.*|)\\/folders\\/([0-9a-zA-Z\\-_]+)(?:\\/.*|)"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        256,
+        192
+      ],
+      "id": "c6e20db8-3049-4119-8262-765da4557a3e",
+      "name": "Create Folder in Drive1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, folder_name: $json.name, folder_id: $json.id, message: 'Carpeta de universidad creada exitosamente' } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        480,
+        192
+      ],
+      "id": "8f65e712-b6d0-430e-9235-e7ec0cf22aaa",
+      "name": "Respond Success1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "create-commission-folder",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -192,
+        1608
+      ],
+      "id": "f05f165e-d825-429d-9b27-311d8a5d5b57",
+      "name": "Webhook - Create Commission",
+      "webhookId": "f7f59c37-d4b1-4fb8-a937-ef3de206edc9"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('Set Variables4').item.json.course_id }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        928,
+        1608
+      ],
+      "id": "f6682556-4ed4-4d67-8c05-50787892a255",
+      "name": "Search Course Folder",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $('Set Variables4').item.json.commission_id }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1152,
+        1608
+      ],
+      "id": "c244ae60-ea4f-4ee1-814c-bc9dcac07794",
+      "name": "Create Commission Folder",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "commission_id",
+              "value": "={{ $json.body.commission_id }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "course_id",
+              "value": "={{ $json.body.course_id }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "career_id",
+              "value": "={{ $json.body.career_id }}",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "faculty_id",
+              "value": "={{ $json.body.faculty_id }}",
+              "type": "string"
+            },
+            {
+              "id": "5",
+              "name": "university_id",
+              "value": "={{ $json.body.university_id }}",
+              "type": "string"
+            },
+            {
+              "id": "6",
+              "name": "root_folder_url",
+              "value": "=https://drive.google.com/drive/u/0/folders/15vLtHZZyy1Fxs5S94lNmUjYdti3Tof-6",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        32,
+        1608
+      ],
+      "id": "34097eab-9c25-4d87-9526-423ca6d40f2c",
+      "name": "Set Variables4"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $json.university_id }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.root_folder_url }}",
+            "mode": "url",
+            "__regex": "https:\\/\\/drive\\.google\\.com(?:\\/.*|)\\/folders\\/([0-9a-zA-Z\\-_]+)(?:\\/.*|)"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        256,
+        1608
+      ],
+      "id": "c637b809-9687-42fc-92d7-b6f3dbc29dde",
+      "name": "Search University Folder3",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('Set Variables4').item.json.faculty_id }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        480,
+        1608
+      ],
+      "id": "a8109ae8-f5c7-4342-815f-4fbf268d9fc8",
+      "name": "Search Faculty Folder2",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('Set Variables4').item.json.career_id }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        704,
+        1608
+      ],
+      "id": "701d6f17-abec-4f3d-9ab7-ad75d0bddc05",
+      "name": "Search Career Folder1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, folder_name: $json.name, folder_id: $json.id, message: 'Carpeta de comisión creada exitosamente' } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1376,
+        1608
+      ],
+      "id": "60d02cdd-62ac-4611-97b8-8b8710957110",
+      "name": "Respond Success4"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "upload-file-to-drive",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -192,
+        2376
+      ],
+      "id": "ad0fb439-1cfa-4090-bcaa-5e34d70b4252",
+      "name": "Webhook - Upload File",
+      "webhookId": "db4f0676-53ee-401e-927e-3f78c3d14f85"
+    },
+    {
+      "parameters": {
+        "name": "={{ $('Set Variables6').item.json.fileName }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $('Set Variables6').item.json.folderId }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        480,
+        2376
+      ],
+      "id": "a71dc277-394c-456a-89ec-e4ca21dc78e9",
+      "name": "Upload to Google Drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      },
+      "continueOnFail": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "success",
+              "value": "=true",
+              "type": "boolean"
+            },
+            {
+              "id": "2",
+              "name": "drive_file_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "drive_file_url",
+              "value": "=https://drive.google.com/file/d/{{ $json.id }}/view",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "file_name",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        704,
+        2280
+      ],
+      "id": "b81509bc-25da-4a4d-9142-6e00f5f0debb",
+      "name": "Format Response"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "success",
+              "value": "=false",
+              "type": "boolean"
+            },
+            {
+              "id": "2",
+              "name": "error",
+              "value": "={{ $json.error?.message || $json.message || 'Error uploading file to Google Drive' }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "error_details",
+              "value": "={{ $json.error?.description || $json.description || 'Unknown error' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        704,
+        2472
+      ],
+      "id": "82322069-63e8-4623-8e79-cc58df4fb075",
+      "name": "Format Error"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 500
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        928,
+        2472
+      ],
+      "id": "fba437d1-7d73-43e7-a593-05caf168f104",
+      "name": "Respond Error"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "fileName",
+              "value": "={{ $json.body.fileName }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "folderId",
+              "value": "={{ $json.body.folderId }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "fileContent",
+              "value": "={{ $json.body.fileContent }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        32,
+        2376
+      ],
+      "id": "37b68917-fe07-42ab-96b4-b25ac6fb6c15",
+      "name": "Set Variables6"
+    },
+    {
+      "parameters": {
+        "options": {
+          "fileName": "={{ $json.fileName }}"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        256,
+        2376
+      ],
+      "id": "7142f429-a7a4-4e0f-99e7-98e151d2bddc",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        928,
+        2280
+      ],
+      "id": "a7faa86d-5cc0-47ad-a7b9-7f44d44935df",
+      "name": "Respond Success6"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "create-student-folder",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -192,
+        2696
+      ],
+      "id": "ce272953-9821-4e2a-bd8c-812ee7e0e037",
+      "name": "Webhook - Create Student Folder",
+      "webhookId": "create-student-folder"
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $json.body.folderName }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $json.body.parentFolderId }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        32,
+        2696
+      ],
+      "id": "779d1378-6357-4203-9b39-78a8837298f6",
+      "name": "Create Student Folder in Drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, folder_id: $json.id, folder_name: $json.name, message: 'Carpeta de alumno creada exitosamente' } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        256,
+        2696
+      ],
+      "id": "d31a0dca-1585-44a0-b6a3-303c0bceb309",
+      "name": "Respond Success7"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "create-submission-folder",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -192,
+        1832
+      ],
+      "id": "6cbc9bf5-9a6d-4776-a82d-d7c8c33c6e4e",
+      "name": "Webhook - Create Submit",
+      "webhookId": "f7f59c37-d4b1-4fb8-a937-ef3de206edc9"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "automatico",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -192,
+        2056
+      ],
+      "id": "9ec768c9-95f7-40a0-bc24-0d7442617b14",
+      "name": "Correccion automatica",
+      "webhookId": "14015191-6a15-4d6e-b300-66f2c706bace"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"drive_link\": \"https://docs.google.com/spreadsheets/d/{{ $json.id }}\",\n  \"alumnos_corregidos\": {{ $('Call correccion-masiva').last().json.cantidad_corregidos }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2272,
+        2056
+      ],
+      "id": "8c69c71b-474c-432f-921a-8ab825ea29a8",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "spreadsheet-response-id",
+              "name": "id",
+              "value": "={{ $('DATOS').item.json.spreadsheet_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2048,
+        2056
+      ],
+      "id": "93e9a264-7623-4094-bc18-bdb56fe22c05",
+      "name": "Prepare Response"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5d38bca3-55bc-416e-bf67-d040f929ce73",
+              "name": "nombre_universidad",
+              "value": "={{ $json.body.university_id }}",
+              "type": "string"
+            },
+            {
+              "id": "2b52c9d2-fef4-4398-bb40-06dd43a3e6e1",
+              "name": "facultad",
+              "value": "={{ $json.body.faculty_id }}",
+              "type": "string"
+            },
+            {
+              "id": "357cc863-6e6f-40b4-8729-42b288efed0c",
+              "name": "carrera",
+              "value": "={{ $json.body.career_id }}",
+              "type": "string"
+            },
+            {
+              "id": "52edaaa7-9a4d-4ee8-87db-7d23effd55d5",
+              "name": "materia",
+              "value": "={{ $json.body.course_id }}",
+              "type": "string"
+            },
+            {
+              "id": "4aa84934-e310-4629-b7b0-308ab5a9ba57",
+              "name": "comision",
+              "value": "={{ $json.body.commission_id }}",
+              "type": "string"
+            },
+            {
+              "id": "3c898573-5264-4a12-8cae-f546505b4a93",
+              "name": "trabajo",
+              "value": "={{ $json.body.rubric_id }}",
+              "type": "string"
+            },
+            {
+              "id": "806e62d9-5423-4a37-ad02-3aa8348f5a21",
+              "name": "apiKey",
+              "value": "={{ $json.body.gemini_api_key }}",
+              "type": "string"
+            },
+            {
+              "id": "5c96a24f-fae9-41b8-bfa7-47a70479d47d",
+              "name": "rubrica",
+              "value": "={{ $json.body.rubric_json }}",
+              "type": "object"
+            },
+            {
+              "id": "spreadsheet-id-field-auto",
+              "name": "spreadsheet_id",
+              "value": "={{ $json.body.spreadsheet_id }}",
+              "type": "string"
+            },
+            {
+              "id": "rubric-folder-id-field-auto",
+              "name": "rubric_folder_id",
+              "value": "={{ $json.body.rubric_folder_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        32,
+        2056
+      ],
+      "id": "1052c70e-b343-47e7-b466-90c7275a9b04",
+      "name": "DATOS"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('DATOS').item.json.comision }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1376,
+        2056
+      ],
+      "id": "6b96797a-6fba-46f7-9aa5-0ba9b336c5f8",
+      "name": "Search files and folders4",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('DATOS').item.json.materia }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1152,
+        2056
+      ],
+      "id": "d8db6733-68f4-457f-809c-006f39717578",
+      "name": "Search files and folders3",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('DATOS').item.json.carrera }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        928,
+        2056
+      ],
+      "id": "20809ced-6f5b-499c-ba7b-db7dd6bf31da",
+      "name": "Search files and folders2",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('DATOS').item.json.facultad }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        704,
+        2056
+      ],
+      "id": "4b6f3d3f-e515-4e84-93de-4bc29eb362b7",
+      "name": "Search files and folders1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('DATOS').item.json.nombre_universidad }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.drive_root }}",
+            "mode": "url"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        480,
+        2056
+      ],
+      "id": "06936437-741b-4df0-8521-75f978509328",
+      "name": "Search files and folders",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "11502e79-ffed-48d3-9e32-c9a93534da9d",
+              "name": "drive_root",
+              "value": "https://drive.google.com/drive/u/0/folders/15vLtHZZyy1Fxs5S94lNmUjYdti3Tof-6",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        256,
+        2056
+      ],
+      "id": "c685c267-4935-4105-a974-68a1affb68cc",
+      "name": "ROOT DRIVE"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "ypEwYSV852TZ3zs7",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/ypEwYSV852TZ3zs7",
+          "cachedResultName": "Prueba - Correcion Masiva"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nombre_universidad": "={{ $('DATOS').item.json.nombre_universidad }}",
+            "facultad": "={{ $('DATOS').item.json.facultad }}",
+            "carrera": "={{ $('DATOS').item.json.carrera }}",
+            "materia": "={{ $('DATOS').item.json.materia }}",
+            "comision": "={{ $('DATOS').item.json.comision }}",
+            "apiKey": "={{ $('DATOS').item.json.apiKey }}",
+            "rubrica": "={{ $('DATOS').item.json.rubrica }}",
+            "trabajo": "={{ $('DATOS').item.json.trabajo }}",
+            "spreadsheet_id": "={{ $('DATOS').item.json.spreadsheet_id }}",
+            "rubric_folder_id": "={{ $('DATOS').item.json.rubric_folder_id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "nombre_universidad",
+              "displayName": "nombre_universidad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "facultad",
+              "displayName": "facultad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "carrera",
+              "displayName": "carrera",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "materia",
+              "displayName": "materia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "comision",
+              "displayName": "comision",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "apiKey",
+              "displayName": "apiKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "rubrica",
+              "displayName": "rubrica",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "trabajo",
+              "displayName": "trabajo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "spreadsheet_id",
+              "displayName": "spreadsheet_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "rubric_folder_id",
+              "displayName": "rubric_folder_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1824,
+        2056
+      ],
+      "name": "Call correccion-masiva",
+      "id": "58f1aae6-233b-464d-8c87-86eabd58b8c8",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('DATOS').item.json.trabajo }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1600,
+        2056
+      ],
+      "id": "8cfd262e-b6fc-4c0d-8eb5-145f9302e9fb",
+      "name": "Search files and folders5",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('Set Variables7').item.json.course_id }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        928,
+        1832
+      ],
+      "id": "99bc2325-5094-453c-b93e-995f765c9b05",
+      "name": "Search Course Folder3",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2cac821d-8fe0-47f1-b876-ebd63cdea20b",
+              "name": "submit_id",
+              "value": "={{ $json.body.submit_id }}",
+              "type": "string"
+            },
+            {
+              "id": "1",
+              "name": "commission_id",
+              "value": "={{ $json.body.commission_id }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "course_id",
+              "value": "={{ $json.body.course_id }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "career_id",
+              "value": "={{ $json.body.career_id }}",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "faculty_id",
+              "value": "={{ $json.body.faculty_id }}",
+              "type": "string"
+            },
+            {
+              "id": "5",
+              "name": "university_id",
+              "value": "={{ $json.body.university_id }}",
+              "type": "string"
+            },
+            {
+              "id": "6",
+              "name": "root_folder_url",
+              "value": "=https://drive.google.com/drive/u/0/folders/15vLtHZZyy1Fxs5S94lNmUjYdti3Tof-6",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        32,
+        1832
+      ],
+      "id": "be0cec02-459e-48cf-aa21-3f970fffe25c",
+      "name": "Set Variables7"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $json.university_id }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.root_folder_url }}",
+            "mode": "url",
+            "__regex": "https:\\/\\/drive\\.google\\.com(?:\\/.*|)\\/folders\\/([0-9a-zA-Z\\-_]+)(?:\\/.*|)"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        256,
+        1832
+      ],
+      "id": "1a8fc8c9-3219-4775-8c04-db3665d7d8e7",
+      "name": "Search University Folder5",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('Set Variables7').item.json.faculty_id }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        480,
+        1832
+      ],
+      "id": "b321cab4-ee10-42b8-b56b-757ae804070c",
+      "name": "Search Faculty Folder4",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('Set Variables7').item.json.career_id }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        704,
+        1832
+      ],
+      "id": "75823fc8-b6fe-486b-afbb-8fba05cb2294",
+      "name": "Search Career Folder3",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, folder_name: $('Create submission Folder1').item.json.name, folder_id: $('Create submission Folder1').item.json.id, spreadsheet_id: $('Move Spreadsheet to Folder1').item.json.id, spreadsheet_url: 'https://docs.google.com/spreadsheets/d/' + $('Move Spreadsheet to Folder1').item.json.id + '/edit', folder_url: 'https://drive.google.com/drive/folders/' + $('Create submission Folder1').item.json.id, message: 'Carpeta y spreadsheet creados exitosamente con headers' } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2496,
+        1832
+      ],
+      "id": "253632ce-869a-495e-8afb-1574a967f27b",
+      "name": "Respond Success8"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('Set Variables7').item.json.commission_id }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1152,
+        1832
+      ],
+      "id": "721c35f4-158f-4b2f-8350-6c201b4678b6",
+      "name": "Search Course Folder4",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $('Set Variables7').item.json.submit_id }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1376,
+        1832
+      ],
+      "id": "6514356c-1d96-46aa-a7c6-986d9d0afc71",
+      "name": "Create submission Folder1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "spreadsheet",
+        "title": "entregas",
+        "sheetsUi": {
+          "sheetValues": [
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1600,
+        1832
+      ],
+      "id": "c9fe2ede-0ca8-466c-917a-2e328ddeadd2",
+      "name": "Create Entregas Spreadsheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "n3KenxiMBhQIWtGC",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.spreadsheetId }}",
+          "mode": "id"
+        },
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $('Create submission Folder1').item.json.id }}",
+          "mode": "id"
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1824,
+        1832
+      ],
+      "id": "f77d8f1a-0674-4f24-966b-fc0c1a53b767",
+      "name": "Move Spreadsheet to Folder1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "19At7w3BEkmRgQb7DpUqZdOigIMNPrPKILOxNgPnoUco",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Hoja 1",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "1",
+              "displayName": "1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "2",
+              "displayName": "2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "3",
+              "displayName": "3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "4",
+              "displayName": "4",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "5",
+              "displayName": "5",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2272,
+        1832
+      ],
+      "id": "a6d45907-bac6-4465-8ee6-efd24574599f",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "R8mBEK2CGqkBdBqr",
+          "name": "Google Sheets account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "855bdfb4-2368-40f0-80c7-d75b41d2faad",
+              "name": "alumno",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "4aca9a60-c5c7-44f6-850e-2cab585920a3",
+              "name": "puntaje_total",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "fa6a6cdc-0775-4482-800b-d54a5138706c",
+              "name": "criterios",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "13de4d8a-6406-4989-ad7c-070f218a5ff0",
+              "name": "fortalezas",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "b7fb3ec2-a341-4187-bbd6-31d730ff6aab",
+              "name": "recomendaciones",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2048,
+        1832
+      ],
+      "id": "fb23a093-4f31-45b2-93ef-e2ea4ce96fbc",
+      "name": "Prepare Response1"
+    }
+  ],
+  "connections": {
+    "Obtener PDF": {
+      "main": [
+        [
+          {
+            "node": "Analyze document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze document": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Subir a planilla": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create sheet": {
+      "main": [
+        [
+          {
+            "node": "Sheets1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheets": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheets1": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Corregir": {
+      "main": [
+        [
+          {
+            "node": "Pasar rubrica a Texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pasar rubrica a Texto": {
+      "main": [
+        [
+          {
+            "node": "Corregir con IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Corregir con IA": {
+      "main": [
+        [
+          {
+            "node": "Setear respuesta de Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Setear respuesta de Gemini": {
+      "main": [
+        [
+          {
+            "node": "Enviar correccion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Create Faculty": {
+      "main": [
+        [
+          {
+            "node": "Set Variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Variables": {
+      "main": [
+        [
+          {
+            "node": "Search University Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search University Folder": {
+      "main": [
+        [
+          {
+            "node": "Create Folder in Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Folder in Drive": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Create Career": {
+      "main": [
+        [
+          {
+            "node": "Set Variables2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Faculty Folder": {
+      "main": [
+        [
+          {
+            "node": "Create Folder in Drive2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Variables2": {
+      "main": [
+        [
+          {
+            "node": "Search University Folder1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search University Folder1": {
+      "main": [
+        [
+          {
+            "node": "Search Faculty Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Folder in Drive2": {
+      "main": [
+        [
+          {
+            "node": "Respond Success2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Create Course": {
+      "main": [
+        [
+          {
+            "node": "Set Variables3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Career Folder": {
+      "main": [
+        [
+          {
+            "node": "Create Folder in Drive3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Variables3": {
+      "main": [
+        [
+          {
+            "node": "Search University Folder2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search University Folder2": {
+      "main": [
+        [
+          {
+            "node": "Search Faculty Folder1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Faculty Folder1": {
+      "main": [
+        [
+          {
+            "node": "Search Career Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Folder in Drive3": {
+      "main": [
+        [
+          {
+            "node": "Respond Success3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Create University": {
+      "main": [
+        [
+          {
+            "node": "Set Variables1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Variables1": {
+      "main": [
+        [
+          {
+            "node": "Create Folder in Drive1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Folder in Drive1": {
+      "main": [
+        [
+          {
+            "node": "Respond Success1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Create Commission": {
+      "main": [
+        [
+          {
+            "node": "Set Variables4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Course Folder": {
+      "main": [
+        [
+          {
+            "node": "Create Commission Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Commission Folder": {
+      "main": [
+        [
+          {
+            "node": "Respond Success4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Variables4": {
+      "main": [
+        [
+          {
+            "node": "Search University Folder3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search University Folder3": {
+      "main": [
+        [
+          {
+            "node": "Search Faculty Folder2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Faculty Folder2": {
+      "main": [
+        [
+          {
+            "node": "Search Career Folder1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Career Folder1": {
+      "main": [
+        [
+          {
+            "node": "Search Course Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Upload File": {
+      "main": [
+        [
+          {
+            "node": "Set Variables6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Success6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Error": {
+      "main": [
+        [
+          {
+            "node": "Respond Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Variables6": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Upload to Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Create Student Folder": {
+      "main": [
+        [
+          {
+            "node": "Create Student Folder in Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Student Folder in Drive": {
+      "main": [
+        [
+          {
+            "node": "Respond Success7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Create Submit": {
+      "main": [
+        [
+          {
+            "node": "Set Variables7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Correccion automatica": {
+      "main": [
+        [
+          {
+            "node": "DATOS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DATOS": {
+      "main": [
+        [
+          {
+            "node": "ROOT DRIVE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders4": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders3": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders2": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders1": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ROOT DRIVE": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call correccion-masiva": {
+      "main": [
+        [
+          {
+            "node": "Prepare Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders5": {
+      "main": [
+        [
+          {
+            "node": "Call correccion-masiva",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Course Folder3": {
+      "main": [
+        [
+          {
+            "node": "Search Course Folder4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Variables7": {
+      "main": [
+        [
+          {
+            "node": "Search University Folder5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search University Folder5": {
+      "main": [
+        [
+          {
+            "node": "Search Faculty Folder4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Faculty Folder4": {
+      "main": [
+        [
+          {
+            "node": "Search Career Folder3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Career Folder3": {
+      "main": [
+        [
+          {
+            "node": "Search Course Folder3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Course Folder4": {
+      "main": [
+        [
+          {
+            "node": "Create submission Folder1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create submission Folder1": {
+      "main": [
+        [
+          {
+            "node": "Create Entregas Spreadsheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Entregas Spreadsheet1": {
+      "main": [
+        [
+          {
+            "node": "Move Spreadsheet to Folder1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move Spreadsheet to Folder1": {
+      "main": [
+        [
+          {
+            "node": "Prepare Response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Respond Success8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Response1": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f0981ae4c0ef6f915f0b46ae60edab85d4bd6cddc77dbd7c3bcb8e7a3ea6e2a7"
+  }
+}

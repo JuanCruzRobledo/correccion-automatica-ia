@@ -1,0 +1,638 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "create-submission-folder",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -176,
+        1840
+      ],
+      "id": "6cbc9bf5-9a6d-4776-a82d-d7c8c33c6e4e",
+      "name": "Webhook - Create Submit",
+      "webhookId": "f7f59c37-d4b1-4fb8-a937-ef3de206edc9"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('Set Variables7').item.json.course_id }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        912,
+        1840
+      ],
+      "id": "99bc2325-5094-453c-b93e-995f765c9b05",
+      "name": "Search Course Folder3",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2cac821d-8fe0-47f1-b876-ebd63cdea20b",
+              "name": "submit_id",
+              "value": "={{ $json.body.submit_id }}",
+              "type": "string"
+            },
+            {
+              "id": "1",
+              "name": "commission_id",
+              "value": "={{ $json.body.commission_id }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "course_id",
+              "value": "={{ $json.body.course_id }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "career_id",
+              "value": "={{ $json.body.career_id }}",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "faculty_id",
+              "value": "={{ $json.body.faculty_id }}",
+              "type": "string"
+            },
+            {
+              "id": "5",
+              "name": "university_id",
+              "value": "={{ $json.body.university_id }}",
+              "type": "string"
+            },
+            {
+              "id": "6",
+              "name": "root_folder_url",
+              "value": "=https://drive.google.com/drive/u/0/folders/15vLtHZZyy1Fxs5S94lNmUjYdti3Tof-6",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        16,
+        1840
+      ],
+      "id": "be0cec02-459e-48cf-aa21-3f970fffe25c",
+      "name": "Set Variables7"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $json.university_id }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.root_folder_url }}",
+            "mode": "url",
+            "__regex": "https:\\/\\/drive\\.google\\.com(?:\\/.*|)\\/folders\\/([0-9a-zA-Z\\-_]+)(?:\\/.*|)"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        240,
+        1840
+      ],
+      "id": "1a8fc8c9-3219-4775-8c04-db3665d7d8e7",
+      "name": "Search University Folder5",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('Set Variables7').item.json.faculty_id }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        464,
+        1840
+      ],
+      "id": "b321cab4-ee10-42b8-b56b-757ae804070c",
+      "name": "Search Faculty Folder4",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('Set Variables7').item.json.career_id }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        688,
+        1840
+      ],
+      "id": "75823fc8-b6fe-486b-afbb-8fba05cb2294",
+      "name": "Search Career Folder3",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, folder_name: $('Create submission Folder1').item.json.name, folder_id: $('Create submission Folder1').item.json.id, spreadsheet_id: $('Move Spreadsheet to Folder1').item.json.id, spreadsheet_url: 'https://docs.google.com/spreadsheets/d/' + $('Move Spreadsheet to Folder1').item.json.id + '/edit', folder_url: 'https://drive.google.com/drive/folders/' + $('Create submission Folder1').item.json.id, message: 'Carpeta y spreadsheet creados exitosamente con headers' } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2384,
+        1840
+      ],
+      "id": "253632ce-869a-495e-8afb-1574a967f27b",
+      "name": "Respond Success8"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('Set Variables7').item.json.commission_id }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1136,
+        1840
+      ],
+      "id": "721c35f4-158f-4b2f-8350-6c201b4678b6",
+      "name": "Search Course Folder4",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $('Set Variables7').item.json.submit_id }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1360,
+        1840
+      ],
+      "id": "6514356c-1d96-46aa-a7c6-986d9d0afc71",
+      "name": "Create submission Folder1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "spreadsheet",
+        "title": "entregas",
+        "sheetsUi": {
+          "sheetValues": [
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1584,
+        1840
+      ],
+      "id": "c9fe2ede-0ca8-466c-917a-2e328ddeadd2",
+      "name": "Create Entregas Spreadsheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "n3KenxiMBhQIWtGC",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.spreadsheetId }}",
+          "mode": "id"
+        },
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $('Create submission Folder1').item.json.id }}",
+          "mode": "id"
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1808,
+        1840
+      ],
+      "id": "f77d8f1a-0674-4f24-966b-fc0c1a53b767",
+      "name": "Move Spreadsheet to Folder1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Szu2o4YspK0rOeZL",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "19At7w3BEkmRgQb7DpUqZdOigIMNPrPKILOxNgPnoUco",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Hoja 1",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "1",
+              "displayName": "1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "2",
+              "displayName": "2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "3",
+              "displayName": "3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "4",
+              "displayName": "4",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "5",
+              "displayName": "5",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2192,
+        1840
+      ],
+      "id": "a6d45907-bac6-4465-8ee6-efd24574599f",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "R8mBEK2CGqkBdBqr",
+          "name": "Google Sheets account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "855bdfb4-2368-40f0-80c7-d75b41d2faad",
+              "name": "alumno",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "4aca9a60-c5c7-44f6-850e-2cab585920a3",
+              "name": "puntaje_total",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "fa6a6cdc-0775-4482-800b-d54a5138706c",
+              "name": "criterios",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "13de4d8a-6406-4989-ad7c-070f218a5ff0",
+              "name": "fortalezas",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "b7fb3ec2-a341-4187-bbd6-31d730ff6aab",
+              "name": "recomendaciones",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2000,
+        1840
+      ],
+      "id": "fb23a093-4f31-45b2-93ef-e2ea4ce96fbc",
+      "name": "Prepare Response1"
+    }
+  ],
+  "connections": {
+    "Webhook - Create Submit": {
+      "main": [
+        [
+          {
+            "node": "Set Variables7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Course Folder3": {
+      "main": [
+        [
+          {
+            "node": "Search Course Folder4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Variables7": {
+      "main": [
+        [
+          {
+            "node": "Search University Folder5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search University Folder5": {
+      "main": [
+        [
+          {
+            "node": "Search Faculty Folder4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Faculty Folder4": {
+      "main": [
+        [
+          {
+            "node": "Search Career Folder3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Career Folder3": {
+      "main": [
+        [
+          {
+            "node": "Search Course Folder3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Course Folder4": {
+      "main": [
+        [
+          {
+            "node": "Create submission Folder1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create submission Folder1": {
+      "main": [
+        [
+          {
+            "node": "Create Entregas Spreadsheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Entregas Spreadsheet1": {
+      "main": [
+        [
+          {
+            "node": "Move Spreadsheet to Folder1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move Spreadsheet to Folder1": {
+      "main": [
+        [
+          {
+            "node": "Prepare Response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Respond Success8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Response1": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {
+    "Webhook - Create Submit": [
+      {
+        "headers": {
+          "host": "primerparcialp1-n8n.vbz8zm.easypanel.host",
+          "user-agent": "axios/1.12.2",
+          "content-length": "245",
+          "accept": "application/json, text/plain, */*",
+          "accept-encoding": "gzip, compress, deflate, br",
+          "content-type": "application/json",
+          "x-forwarded-for": "38.51.31.214",
+          "x-forwarded-host": "primerparcialp1-n8n.vbz8zm.easypanel.host",
+          "x-forwarded-port": "443",
+          "x-forwarded-proto": "https",
+          "x-forwarded-server": "55c68ac14d96",
+          "x-real-ip": "38.51.31.214"
+        },
+        "params": {},
+        "query": {},
+        "body": {
+          "submit_id": "2025-isi-frm-programacion-3-comision-1-tp-aaaa-2-1764770060957-c7en",
+          "commission_id": "2025-isi-frm-programacion-3-comision-1",
+          "course_id": "2025-isi-frm-programacion-3",
+          "career_id": "isi-frm",
+          "faculty_id": "frm",
+          "university_id": "utn"
+        },
+        "webhookUrl": "https://primerparcialp1-n8n.vbz8zm.easypanel.host/webhook/create-submission-folder",
+        "executionMode": "production"
+      }
+    ]
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f0981ae4c0ef6f915f0b46ae60edab85d4bd6cddc77dbd7c3bcb8e7a3ea6e2a7"
+  }
+}

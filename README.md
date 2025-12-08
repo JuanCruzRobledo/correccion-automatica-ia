@@ -6,6 +6,7 @@ Sistema completo de corrección automática de entregas académicas utilizando I
 
 ## Tabla de Contenidos
 
+- [Inicio Rápido con Docker](#inicio-rápido-con-docker-🐳) ⭐ **NUEVO**
 - [Descripcion General](#descripcion-general)
 - [Caracteristicas Principales](#caracteristicas-principales)
 - [Arquitectura del Sistema](#arquitectura-del-sistema)
@@ -16,6 +17,54 @@ Sistema completo de corrección automática de entregas académicas utilizando I
 - [Flujo General del Sistema](#flujo-general-del-sistema)
 - [Estado del Proyecto](#estado-del-proyecto)
 - [Creditos](#creditos)
+
+---
+
+## Inicio Rápido con Docker 🐳
+
+**¿Primera vez usando el sistema? ¡Ejecútalo en 3 comandos!**
+
+### Requisitos
+- [Docker Desktop](https://docs.docker.com/get-docker/) instalado
+- [Git](https://git-scm.com/downloads) instalado
+
+### Instalación (3 pasos)
+
+```bash
+# 1. Clonar repositorio
+git clone https://github.com/tu-usuario/proyecto-correccion.git
+cd proyecto-correccion
+
+# 2. Setup inicial
+make setup
+
+# 3. Editar .env (solo MONGODB_URI es obligatorio) y luego iniciar
+make start
+```
+
+### Acceder al Sistema
+
+- **Frontend:** http://localhost:3000
+- **Backend:** http://localhost:5000
+- **N8N:** http://localhost:5678 (admin/admin123)
+
+### Comandos Útiles
+
+```bash
+make start        # Iniciar servicios
+make stop         # Detener servicios
+make logs-f       # Ver logs en tiempo real
+make status       # Ver estado de servicios
+make troubleshoot # Diagnóstico si hay problemas
+make help         # Ver todos los comandos
+```
+
+### Documentación Completa
+
+- **📖 [Guía Completa de Docker](README-DOCKER.md)** - Instalación detallada, configuración y troubleshooting
+- **⚡ [Quick Start](QUICK-START.md)** - Guía ultra rápida
+- **🌐 [Networking](NETWORKING.md)** - Comunicación entre servicios
+- **🔧 [Configurar N8N](n8n/README-PRECONFIGURACION.md)** - Preconfigurar workflows y credenciales
 
 ---
 
