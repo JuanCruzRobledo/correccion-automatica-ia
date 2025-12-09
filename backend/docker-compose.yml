@@ -31,12 +31,13 @@ services:
       N8N_SPREADSHEET_WEBHOOK_URL: ${N8N_SPREADSHEET_WEBHOOK_URL:-http://localhost:5678/webhook/spreadsheet}
       
       # n8n Webhooks - Creación de carpetas
+      SEED_CREATE_DRIVE_FOLDERS: "true"
       N8N_CREATE_UNIVERSITY_FOLDER_WEBHOOK: ${N8N_CREATE_UNIVERSITY_FOLDER_WEBHOOK:-http://localhost:5678/webhook/create-university-folder}
-      N8N_CREATE_FACULTY_FOLDER_WEBHOOK: ${N8N_CREATE_FACULTY_FOLDER_WEBHOOK:-.http://localhost:5678/webhook/create-faculty-folder}
-      N8N_CREATE_CAREER_FOLDER_WEBHOOK: ${N8N_CREATE_CAREER_FOLDER_WEBHOOK:-.http://localhost:5678/webhook/create-career-folder}
-      N8N_CREATE_COURSE_FOLDER_WEBHOOK: ${N8N_CREATE_COURSE_FOLDER_WEBHOOK:-.http://localhost:5678/webhook/create-course-folder}
-      N8N_CREATE_COMMISSION_FOLDER_WEBHOOK: ${N8N_CREATE_COMMISSION_FOLDER_WEBHOOK:-.http://localhost:5678/webhook/create-commission-folder}
-      N8N_CREATE_SUBMISSION_FOLDER_WEBHOOK: ${N8N_CREATE_SUBMISSION_FOLDER_WEBHOOK:-.http://localhost:5678/webhook/create-submission-folder}
+      N8N_CREATE_FACULTY_FOLDER_WEBHOOK: ${N8N_CREATE_FACULTY_FOLDER_WEBHOOK:-http://localhost:5678/webhook/create-faculty-folder}
+      N8N_CREATE_CAREER_FOLDER_WEBHOOK: ${N8N_CREATE_CAREER_FOLDER_WEBHOOK:-http://localhost:5678/webhook/create-career-folder}
+      N8N_CREATE_COURSE_FOLDER_WEBHOOK: ${N8N_CREATE_COURSE_FOLDER_WEBHOOK:-http://localhost:5678/webhook/create-course-folder}
+      N8N_CREATE_COMMISSION_FOLDER_WEBHOOK: ${N8N_CREATE_COMMISSION_FOLDER_WEBHOOK:-http://localhost:5678/webhook/create-commission-folder}
+      N8N_CREATE_SUBMISSION_FOLDER_WEBHOOK: ${N8N_CREATE_SUBMISSION_FOLDER_WEBHOOK:-http://localhost:5678/webhook/create-submission-folder}
       
       # CORS
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
@@ -50,3 +51,10 @@ services:
       timeout: 3s
       retries: 3
       start_period: 40s
+      
+    volumes:
+      # Mapea tu carpeta local al contenedor.
+      # Si cambias código en Windows, cambia en Docker al instante.
+      - ./backend:/app
+      # Ignora node_modules del host para usar los de linux del contenedor
+      - /app/node_modules
