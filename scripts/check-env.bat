@@ -12,6 +12,14 @@ echo   Verificacion de Variables de Entorno
 echo ============================================
 echo.
 
+REM Verificar Docker (opcional, solo para asegurar que el entorno está OK)
+docker --version >nul 2>&1
+if %ERRORLEVEL% neq 0 (
+    echo [WARNING] Docker no esta instalado o no esta en el PATH
+    echo            Este script solo verifica variables, pero Docker es necesario para ejecutar el sistema
+    echo.
+)
+
 REM Verificar si existe .env
 if not exist .env (
     echo [ERROR] Archivo .env no encontrado

@@ -10,7 +10,7 @@ import Faculty from '../src/models/Faculty.js';
 import Career from '../src/models/Career.js';
 import Course from '../src/models/Course.js';
 import Commission from '../src/models/Commission.js';
-import Rubric, { RUBRIC_TYPES } from '../src/models/Rubric.js';
+// import Rubric, { RUBRIC_TYPES } from '../src/models/Rubric.js'; // Eliminado: No crear rúbricas en seed
 import User from '../src/models/User.js';
 import * as driveService from '../src/services/driveService.js';
 
@@ -42,159 +42,12 @@ const courses = [
   { course_id: `${currentYear}-tup-frm-programacion-3`, name: 'Programacion 3', year: currentYear, career_id: 'tup-frm', faculty_id: 'frm', university_id: 'utn' },
 ];
 
-// Rubrica 1: TP Listas (Programacion 1)
-const rubric1JSON = {
-  rubric_id: 'practico-5-listas',
-  title: 'Practico 5: Listas',
-  version: '1.0',
-  assessment_type: 'tp',
-  course: 'Programacion 1',
-  language_or_stack: ['python'],
-  submission: {
-    single_file: true,
-    accepted_extensions: ['.py'],
-    delivery_channel: 'plataforma',
-    constraints: ['El codigo fuente debe ser entregado en un unico archivo Python (.py).'],
-  },
-  grading: {
-    policy: 'weighted_average',
-    rounding: 'half_up',
-    total_points: 100,
-  },
-  criteria: [
-    {
-      id: 'C1',
-      name: 'Correctitud y Funcionalidad',
-      weight: 0.35,
-      description: 'El codigo funciona segun las consignas y los calculos son correctos.',
-      subcriteria: [],
-    },
-    {
-      id: 'C2',
-      name: 'Manipulacion de Listas',
-      weight: 0.25,
-      description: 'Uso correcto de listas, slicing, metodos integrados y listas anidadas.',
-      subcriteria: [],
-    },
-    {
-      id: 'C3',
-      name: 'Control de Flujo',
-      weight: 0.15,
-      description: 'Bucles y condicionales aplicados correctamente.',
-      subcriteria: [],
-    },
-    {
-      id: 'C4',
-      name: 'Legibilidad y Buenas Practicas',
-      weight: 0.15,
-      description: 'Nombres claros, comentarios necesarios y estilo consistente.',
-      subcriteria: [],
-    },
-    {
-      id: 'C5',
-      name: 'Resolucion de Problemas',
-      weight: 0.1,
-      description: 'Capacidad para resolver consignas especificas.',
-      subcriteria: [],
-    },
-  ],
-  penalties: [
-    { description: 'Plagio detectado', penalty_percent: 100 },
-    { description: 'Formato de entrega incorrecto', penalty_percent: 10 },
-  ],
-  mandatory_fail_conditions: [],
-  tasks: [],
-};
-
-// Rubrica 2: Parcial Programacion 2
-const rubric2JSON = {
-  rubric_id: 'evaluacion-parcial-prog2',
-  title: 'Rubrica de Evaluacion - Programacion 2',
-  version: '1.0.0',
-  assessment_type: 'parcial',
-  course: 'Programacion 2',
-  language_or_stack: ['python'],
-  submission: {
-    single_file: false,
-    accepted_extensions: ['.py', '.md'],
-    delivery_channel: 'repositorio',
-    constraints: [
-      'Proyecto organizado por modulos (services/, utils/, tests/).',
-      'Debe incluir README con instrucciones de ejecucion.',
-      'Sistema debe ejecutarse con "python main.py" o script equivalente.',
-    ],
-  },
-  grading: {
-    policy: 'sum',
-    rounding: 'half_up',
-    total_points: 260,
-  },
-  criteria: [
-    {
-      id: 'C1',
-      name: 'Patrones y Diseno',
-      weight: 0.3077,
-      description: 'Implementacion de patrones y arquitectura modular.',
-      subcriteria: [
-        {
-          name: 'Patron Factory/Strategy',
-          weight: 0.25,
-          evidence: ['Separacion de responsabilidades', 'Uso de factories', 'Estrategias intercambiables'],
-        },
-        {
-          name: 'Inyeccion de dependencias',
-          weight: 0.25,
-          evidence: ['Servicios reciben dependencias por constructor', 'Evitacion de acoplamiento fuerte'],
-        },
-        {
-          name: 'Capa de servicios y dominio',
-          weight: 0.25,
-          evidence: ['Servicios sin logica de presentacion'],
-        },
-        {
-          name: 'Separacion de vistas/CLI',
-          weight: 0.25,
-          evidence: ['Entrada/salida aislada de la logica'],
-        },
-      ],
-    },
-    {
-      id: 'C2',
-      name: 'Arquitectura y Diseno',
-      weight: 0.2308,
-      description: 'Separacion de responsabilidades y manejo de excepciones.',
-      subcriteria: [],
-    },
-    {
-      id: 'C3',
-      name: 'Calidad de Codigo',
-      weight: 0.2308,
-      description: 'PEP8, docstrings, type hints y nombres significativos.',
-      subcriteria: [],
-    },
-    {
-      id: 'C4',
-      name: 'Funcionalidad del Sistema',
-      weight: 0.1538,
-      description: 'Flujo principal y casos de uso implementados.',
-      subcriteria: [],
-    },
-    {
-      id: 'C5',
-      name: 'Buenas Practicas Avanzadas',
-      weight: 0.0769,
-      description: 'Validaciones, logging y manejo de errores.',
-      subcriteria: [],
-    },
-  ],
-  penalties: [
-    { description: 'Magic numbers sin constantes', penalty_percent: 5 },
-    { description: 'Uso de lambdas complejas', penalty_percent: 5 },
-    { description: 'Falta de docstrings en funciones clave', penalty_percent: 10 },
-  ],
-  mandatory_fail_conditions: ['Plagio detectado', 'Proyecto no ejecutable'],
-  tasks: [],
-};
+// ============================================
+// RÚBRICAS ELIMINADAS
+// ============================================
+// Las rúbricas ahora se crean manualmente por los usuarios
+// ya que cada profesor tiene sus propias consignas y criterios.
+// Esto permite mayor flexibilidad y personalización.
 
 const trackDriveResult = (key, idLabel, result, reason) => {
   const succeeded = result && result.success !== false;
@@ -437,50 +290,9 @@ const seedDatabase = async () => {
       );
     }
 
-    // 7. Rubricas
-    console.log('>>> Migrando rubricas...');
-    const rubrics = [];
-
-    const prog1Commissions = createdCommissions.filter(c => c.course_id.endsWith('-programacion-1'));
-    for (const commission of prog1Commissions) {
-      const course = courses.find(c => c.course_id === commission.course_id);
-      rubrics.push({
-        rubric_id: Rubric.generateRubricId(commission.commission_id, RUBRIC_TYPES.TP, 'TP Listas', 1),
-        name: 'TP Listas',
-        commission_id: commission.commission_id,
-        course_id: commission.course_id,
-        career_id: commission.career_id,
-        faculty_id: commission.faculty_id,
-        university_id: commission.university_id,
-        rubric_type: RUBRIC_TYPES.TP,
-        rubric_number: 1,
-        year: course.year,
-        rubric_json: rubric1JSON,
-        source: 'manual',
-      });
-    }
-
-    const prog2Commissions = createdCommissions.filter(c => c.course_id.endsWith('-programacion-2'));
-    for (const commission of prog2Commissions) {
-      const course = courses.find(c => c.course_id === commission.course_id);
-      rubrics.push({
-        rubric_id: Rubric.generateRubricId(commission.commission_id, RUBRIC_TYPES.PARCIAL_1, 'Parcial 1 - Programacion 2', 1),
-        name: 'Parcial 1 - Programacion 2',
-        commission_id: commission.commission_id,
-        course_id: commission.course_id,
-        career_id: commission.career_id,
-        faculty_id: commission.faculty_id,
-        university_id: commission.university_id,
-        rubric_type: RUBRIC_TYPES.PARCIAL_1,
-        rubric_number: 1,
-        year: course.year,
-        rubric_json: rubric2JSON,
-        source: 'manual',
-      });
-    }
-
-    const createdRubrics = await Rubric.insertMany(rubrics);
-    console.log(`OK  ${createdRubrics.length} rubricas creadas\n`);
+    // 7. Rubricas - ELIMINADO
+    // Las rúbricas ahora se crean manualmente desde el panel de administración
+    console.log('>>> Rubricas: Se deben crear manualmente desde el panel de administración\n');
 
     // 8. Asignar profesores
     console.log('>>> Asignando profesores a comisiones...\n');
@@ -507,7 +319,7 @@ const seedDatabase = async () => {
     console.log(`   - Carreras: ${createdCareers.length}`);
     console.log(`   - Cursos: ${createdCourses.length}`);
     console.log(`   - Comisiones: ${createdCommissions.length}`);
-    console.log(`   - Rubricas: ${createdRubrics.length}`);
+    console.log(`   - Rubricas: 0 (crear manualmente desde el panel)`);
     console.log(`   - Usuarios: ${users.length}`);
     console.log('='.repeat(80));
     if (seedDriveEnabled) {

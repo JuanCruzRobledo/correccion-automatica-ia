@@ -19,9 +19,9 @@ REM ============================================
 echo [1/6] Verificando Docker...
 echo.
 
-where docker >nul 2>&1
+docker --version >nul 2>&1
 if %ERRORLEVEL% neq 0 (
-    echo [ERROR] Docker no esta instalado
+    echo [ERROR] Docker no esta instalado o no esta en el PATH
     echo.
     echo Instala Docker Desktop desde: https://docs.docker.com/get-docker/
     echo.
@@ -53,7 +53,7 @@ if %ERRORLEVEL% neq 0 (
 )
 
 REM Verificar que Docker este corriendo
-docker info >nul 2>&1
+docker ps >nul 2>&1
 if %ERRORLEVEL% neq 0 (
     echo [ERROR] Docker no esta corriendo
     echo.
