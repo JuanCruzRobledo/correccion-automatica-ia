@@ -3,6 +3,7 @@
  * Maneja todas las operaciones CRUD de facultades
  */
 import Faculty from '../models/Faculty.js';
+import SystemConfig from '../models/SystemConfig.js';
 import * as driveService from '../services/driveService.js';
 
 /**
@@ -154,7 +155,8 @@ export const createFaculty = async (req, res) => {
     });
 
     // Crear carpeta en Google Drive (no bloqueante)
-    driveService.createFacultyFolder(faculty_id, university_id).catch((err) => {
+    const rootFolderUrl = await SystemConfig.getValue('root_folder_url');
+    driveService.createFacultyFolder(faculty_id, university_id, rootFolderUrl).catch((err) => {
       console.error('Error al crear carpeta de facultad en Drive:', err);
     });
 

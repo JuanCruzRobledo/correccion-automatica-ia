@@ -21,6 +21,7 @@ import rubricRoutes from './routes/rubricRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import consolidatorRoutes from './routes/consolidatorRoutes.js';
 import submissionRoutes from './routes/submissionRoutes.js';
+import systemConfigRoutes from './routes/systemConfigRoutes.js';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -58,6 +59,7 @@ app.use('/api/commissions', commissionRoutes);
 app.use('/api/rubrics', rubricRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/submissions', submissionRoutes);
+app.use('/api/system-config', systemConfigRoutes); // Rutas de configuración del sistema (solo super-admin)
 
 // Ruta de health check
 app.get('/health', (req, res) => {

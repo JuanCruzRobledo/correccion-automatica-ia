@@ -89,7 +89,7 @@
             {
               "id": "6",
               "name": "root_folder_url",
-              "value": "=https://drive.google.com/drive/u/0/folders/15vLtHZZyy1Fxs5S94lNmUjYdti3Tof-6",
+              "value": "={{ $json.body.root_folder_url || 'https://drive.google.com/drive/u/0/folders/' + $env.GOOGLE_DRIVE_ROOT_FOLDER_ID }}",
               "type": "string"
             }
           ]

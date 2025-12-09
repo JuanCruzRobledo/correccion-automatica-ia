@@ -4,6 +4,7 @@
 import Rubric, { RUBRIC_TYPES } from '../models/Rubric.js';
 import Commission from '../models/Commission.js';
 import Course from '../models/Course.js';
+import SystemConfig from '../models/SystemConfig.js';
 import { generateRubricFromPDF } from '../services/n8nService.js';
 import fs from 'fs/promises';
 import path from 'path';
@@ -304,9 +305,10 @@ export const createRubric = async (req, res) => {
     // Crear carpeta de submission en Google Drive y guardar el folder_id
     // Usamos el rubric_id como submit_id para crear la carpeta
     const { createSubmissionFolder } = await import('../services/driveService.js');
+    const rootFolderUrl = await SystemConfig.getValue('root_folder_url');
     try {
       console.log(`📁 Intentando crear carpeta en Drive para rúbrica: ${rubric_id}`);
-      const driveResponse = await createSubmissionFolder(rubric_id, commission_id, course_id, career_id, faculty_id, university_id);
+      const driveResponse = await createSubmissionFolder(rubric_id, commission_id, course_id, career_id, faculty_id, university_id, rootFolderUrl);
 
       console.log(`📁 Respuesta de createSubmissionFolder:`, driveResponse);
 
@@ -489,9 +491,10 @@ export const createRubricFromPDF = async (req, res) => {
     // Crear carpeta de submission en Google Drive y guardar el folder_id
     // Usamos el rubric_id como submit_id para crear la carpeta
     const { createSubmissionFolder } = await import('../services/driveService.js');
+    const rootFolderUrl = await SystemConfig.getValue('root_folder_url');
     try {
       console.log(`📁 Intentando crear carpeta en Drive para rúbrica: ${rubric_id}`);
-      const driveResponse = await createSubmissionFolder(rubric_id, commission_id, course_id, career_id, faculty_id, university_id);
+      const driveResponse = await createSubmissionFolder(rubric_id, commission_id, course_id, career_id, faculty_id, university_id, rootFolderUrl);
 
       console.log(`📁 Respuesta de createSubmissionFolder:`, driveResponse);
 

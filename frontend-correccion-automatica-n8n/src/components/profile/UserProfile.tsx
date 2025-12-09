@@ -8,6 +8,7 @@ import { Input } from '../shared/Input';
 import { Card } from '../shared/Card';
 import { ChangePasswordModal } from '../auth/ChangePasswordModal';
 import profileService from '../../services/profileService';
+import systemConfigService from '../../services/systemConfigService';
 import type { UserProfile as UserProfileType } from '../../types';
 
 export const UserProfile = () => {
@@ -25,9 +26,20 @@ export const UserProfile = () => {
   // Estado para modal de cambio de contraseña
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
 
+  // Estado para root folder URL (solo super-admin)
+  const [rootFolderUrl, setRootFolderUrl] = useState<string | null>(null);
+  const [loadingRootFolder, setLoadingRootFolder] = useState(false);
+
   useEffect(() => {
     loadProfile();
   }, []);
+
+  // Cargar root folder URL si es super-admin
+  useEffect(() => {
+    if (profile?.role === 'super-admin') {
+      loadRootFolderUrl();
+    }
+  }, [profile?.role]);
 
   const loadProfile = async () => {
     try {
@@ -39,6 +51,19 @@ export const UserProfile = () => {
       setError(err && typeof err === 'object' && 'message' in err ? String(err.message) : 'Error al cargar perfil');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadRootFolderUrl = async () => {
+    try {
+      setLoadingRootFolder(true);
+      const url = await systemConfigService.getRootFolderUrl();
+      setRootFolderUrl(url);
+    } catch (err) {
+      console.error('Error al cargar root folder URL:', err);
+      setRootFolderUrl(null);
+    } finally {
+      setLoadingRootFolder(false);
     }
   };
 
@@ -157,6 +182,40 @@ export const UserProfile = () => {
         </div>
       )}
 
+      {/* Carpeta Raíz de Drive - Solo Super Admin */}
+      {profile.role === 'super-admin' && (
+        <Card title="Administración del Sistema">
+          <div className="space-y-4">
+            <div className="bg-bg-tertiary/30 border border-border-primary/60 rounded-xl p-4">
+              <p className="text-sm text-text-secondary mb-2">
+                <strong>📁 Carpeta Raíz de Google Drive</strong>
+              </p>
+              <p className="text-xs text-text-tertiary mb-4">
+                Acceso directo a la carpeta raíz que contiene toda la estructura de universidades, facultades y cursos.
+              </p>
+
+              {loadingRootFolder ? (
+                <div className="flex items-center gap-2 text-sm text-text-disabled">
+                  <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-accent-1"></div>
+                  <span>Cargando...</span>
+                </div>
+              ) : rootFolderUrl ? (
+                <Button
+                  variant="primary"
+                  onClick={() => window.open(rootFolderUrl, '_blank')}
+                >
+                  📂 Abrir Carpeta Raíz en Drive
+                </Button>
+              ) : (
+                <div className="text-sm text-danger-1">
+                  ⚠️ La carpeta raíz no está configurada. Ejecuta el seed para crearla.
+                </div>
+              )}
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Información del Usuario */}
       <Card title="Información del Usuario">
         <div className="space-y-4">
@@ -168,11 +227,13 @@ export const UserProfile = () => {
             <div>
               <label className="block text-sm font-medium text-text-tertiary mb-1">Rol</label>
               <span className={`inline-block px-3 py-1 rounded-lg text-sm font-medium ${
-                profile.role === 'admin'
+                profile.role === 'super-admin'
+                  ? 'bg-purple-500/20 text-purple-400'
+                  : profile.role === 'admin'
                   ? 'bg-accent-1/20 text-accent-1'
                   : 'bg-bg-tertiary text-text-secondary'
               }`}>
-                {profile.role === 'admin' ? '👑 Administrador' : '👤 Usuario'}
+                {profile.role === 'super-admin' ? '⚡ Super Admin' : profile.role === 'admin' ? '👑 Administrador' : '👤 Usuario'}
               </span>
             </div>
           </div>

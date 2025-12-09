@@ -41,6 +41,7 @@ services:
 
       # N8N Webhooks - Creación de carpetas
       SEED_CREATE_DRIVE_FOLDERS: "true"
+      N8N_CREATE_ROOT_FOLDER_WEBHOOK: http://n8n:5678/webhook/create-root-folder
       N8N_CREATE_UNIVERSITY_FOLDER_WEBHOOK: http://n8n:5678/webhook/create-university-folder
       N8N_CREATE_FACULTY_FOLDER_WEBHOOK: http://n8n:5678/webhook/create-faculty-folder
       N8N_CREATE_CAREER_FOLDER_WEBHOOK: http://n8n:5678/webhook/create-career-folder

@@ -2,6 +2,7 @@
  * Controlador de Universidades
  */
 import University from '../models/University.js';
+import SystemConfig from '../models/SystemConfig.js';
 import * as driveService from '../services/driveService.js';
 
 /**
@@ -105,7 +106,8 @@ export const createUniversity = async (req, res) => {
     await university.save();
 
     // Crear carpeta en Google Drive (no bloqueante)
-    driveService.createUniversityFolder(university_id).catch((err) => {
+    const rootFolderUrl = await SystemConfig.getValue('root_folder_url');
+    driveService.createUniversityFolder(university_id, rootFolderUrl).catch((err) => {
       console.error('Error al crear carpeta de universidad en Drive:', err);
     });
 

@@ -12,6 +12,7 @@ import Course from '../src/models/Course.js';
 import Commission from '../src/models/Commission.js';
 // import Rubric, { RUBRIC_TYPES } from '../src/models/Rubric.js'; // Eliminado: No crear rúbricas en seed
 import User from '../src/models/User.js';
+import SystemConfig from '../src/models/SystemConfig.js';
 import * as driveService from '../src/services/driveService.js';
 
 dotenv.config();
@@ -70,12 +71,26 @@ const seedDatabase = async () => {
     await mongoose.connection.dropDatabase();
     console.log('OK  Base eliminada completamente\n');
 
+    // Crear carpeta raíz del sistema (si Drive está habilitado)
+    let rootFolderUrl = null;
+    if (seedDriveEnabled) {
+      console.log('>>> Creando carpeta raiz del sistema en Google Drive...');
+      const rootResult = await driveService.createRootFolder('Corrección Automática');
+      if (rootResult.success && rootResult.folder_url) {
+        rootFolderUrl = rootResult.folder_url;
+        await SystemConfig.setValue('root_folder_url', rootFolderUrl, 'URL de la carpeta raíz en Google Drive que contiene todas las universidades');
+        console.log(`OK  Carpeta raiz creada: ${rootFolderUrl}\n`);
+      } else {
+        console.warn('WARN  No se pudo crear la carpeta raiz en Drive. Continuando sin ella.\n');
+      }
+    }
+
     console.log('>>> Migrando universidades...');
     const createdUniversities = await University.insertMany(universities);
     console.log(`OK  ${createdUniversities.length} universidades creadas\n`);
     if (seedDriveEnabled) {
       const uniResults = await Promise.allSettled(
-        createdUniversities.map(u => driveService.createUniversityFolder(u.university_id))
+        createdUniversities.map(u => driveService.createUniversityFolder(u.university_id, rootFolderUrl))
       );
       uniResults.forEach((res, idx) =>
         trackDriveResult('universities', createdUniversities[idx].university_id, res.status === 'fulfilled' ? res.value : null, res.reason)
@@ -87,7 +102,7 @@ const seedDatabase = async () => {
     console.log(`OK  ${createdFaculties.length} facultades creadas\n`);
     if (seedDriveEnabled) {
       const facResults = await Promise.allSettled(
-        createdFaculties.map(f => driveService.createFacultyFolder(f.faculty_id, f.university_id))
+        createdFaculties.map(f => driveService.createFacultyFolder(f.faculty_id, f.university_id, rootFolderUrl))
       );
       facResults.forEach((res, idx) =>
         trackDriveResult('faculties', createdFaculties[idx].faculty_id, res.status === 'fulfilled' ? res.value : null, res.reason)
@@ -99,7 +114,7 @@ const seedDatabase = async () => {
     console.log(`OK  ${createdCareers.length} carreras creadas\n`);
     if (seedDriveEnabled) {
       const careerResults = await Promise.allSettled(
-        createdCareers.map(c => driveService.createCareerFolder(c.career_id, c.faculty_id, c.university_id))
+        createdCareers.map(c => driveService.createCareerFolder(c.career_id, c.faculty_id, c.university_id, rootFolderUrl))
       );
       careerResults.forEach((res, idx) =>
         trackDriveResult('careers', createdCareers[idx].career_id, res.status === 'fulfilled' ? res.value : null, res.reason)
@@ -112,7 +127,7 @@ const seedDatabase = async () => {
     if (seedDriveEnabled) {
       const courseResults = await Promise.allSettled(
         createdCourses.map(c =>
-          driveService.createCourseFolder(c.course_id, c.career_id, c.faculty_id, c.university_id)
+          driveService.createCourseFolder(c.course_id, c.career_id, c.faculty_id, c.university_id, rootFolderUrl)
         )
       );
       courseResults.forEach((res, idx) =>
@@ -281,7 +296,8 @@ const seedDatabase = async () => {
             c.course_id,
             c.career_id,
             c.faculty_id,
-            c.university_id
+            c.university_id,
+            rootFolderUrl
           )
         )
       );

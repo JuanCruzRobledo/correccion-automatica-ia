@@ -7,11 +7,50 @@ import axios from 'axios';
 import fs from 'fs';
 
 /**
+ * Crear carpeta raíz del sistema en Google Drive
+ * Esta es la carpeta principal que contendrá todas las universidades
+ * @param {String} rootFolderName - Nombre de la carpeta raíz (por defecto: "Corrección Automática")
+ * @returns {Promise<Object>} { success, folder_id, folder_url, folder_name }
+ */
+export const createRootFolder = async (rootFolderName = 'Corrección Automática') => {
+  try {
+    const webhookUrl = process.env.N8N_CREATE_ROOT_FOLDER_WEBHOOK;
+
+    if (!webhookUrl) {
+      console.warn('⚠️  N8N_CREATE_ROOT_FOLDER_WEBHOOK no está configurada. Saltando creación de carpeta raíz.');
+      return { success: false, message: 'Webhook no configurado' };
+    }
+
+    console.log(`📁 Creando carpeta raíz del sistema: ${rootFolderName}`);
+
+    const response = await axios.post(
+      webhookUrl,
+      { folder_name: rootFolderName },
+      {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 30000,
+      }
+    );
+
+    console.log(`✅ Carpeta raíz creada: ${rootFolderName}`);
+    return response.data;
+  } catch (error) {
+    console.error(`❌ Error al crear carpeta raíz "${rootFolderName}":`, error.message);
+
+    return {
+      success: false,
+      message: error.response?.data?.message || error.message,
+    };
+  }
+};
+
+/**
  * Crear carpeta de Universidad en Google Drive
  * @param {String} university_id - ID de la universidad (nombre de carpeta)
+ * @param {String} root_folder_url - URL de la carpeta raíz donde se creará la universidad
  * @returns {Promise<Object>} Respuesta del webhook
  */
-export const createUniversityFolder = async (university_id) => {
+export const createUniversityFolder = async (university_id, root_folder_url = null) => {
   try {
     const webhookUrl = process.env.N8N_CREATE_UNIVERSITY_FOLDER_WEBHOOK;
 
@@ -22,9 +61,14 @@ export const createUniversityFolder = async (university_id) => {
 
     console.log(`📁 Creando carpeta de universidad: ${university_id}`);
 
+    const payload = { university_id };
+    if (root_folder_url) {
+      payload.root_folder_url = root_folder_url;
+    }
+
     const response = await axios.post(
       webhookUrl,
-      { university_id },
+      payload,
       {
         headers: { 'Content-Type': 'application/json' },
         timeout: 30000, // 30 segundos
@@ -48,9 +92,10 @@ export const createUniversityFolder = async (university_id) => {
  * Crear carpeta de Facultad en Google Drive
  * @param {String} faculty_id - ID de la facultad
  * @param {String} university_id - ID de la universidad padre
+ * @param {String} root_folder_url - URL de la carpeta raíz del sistema
  * @returns {Promise<Object>} Respuesta del webhook
  */
-export const createFacultyFolder = async (faculty_id, university_id) => {
+export const createFacultyFolder = async (faculty_id, university_id, root_folder_url = null) => {
   try {
     const webhookUrl = process.env.N8N_CREATE_FACULTY_FOLDER_WEBHOOK;
 
@@ -61,9 +106,14 @@ export const createFacultyFolder = async (faculty_id, university_id) => {
 
     console.log(`📁 Creando carpeta de facultad: ${faculty_id} (en ${university_id})`);
 
+    const payload = { faculty_id, university_id };
+    if (root_folder_url) {
+      payload.root_folder_url = root_folder_url;
+    }
+
     const response = await axios.post(
       webhookUrl,
-      { faculty_id, university_id },
+      payload,
       {
         headers: { 'Content-Type': 'application/json' },
         timeout: 30000,
@@ -87,9 +137,10 @@ export const createFacultyFolder = async (faculty_id, university_id) => {
  * @param {String} career_id - ID de la carrera
  * @param {String} faculty_id - ID de la facultad padre
  * @param {String} university_id - ID de la universidad
+ * @param {String} root_folder_url - URL de la carpeta raíz del sistema
  * @returns {Promise<Object>} Respuesta del webhook
  */
-export const createCareerFolder = async (career_id, faculty_id, university_id) => {
+export const createCareerFolder = async (career_id, faculty_id, university_id, root_folder_url = null) => {
   try {
     const webhookUrl = process.env.N8N_CREATE_CAREER_FOLDER_WEBHOOK;
 
@@ -100,9 +151,14 @@ export const createCareerFolder = async (career_id, faculty_id, university_id) =
 
     console.log(`📁 Creando carpeta de carrera: ${career_id} (en ${faculty_id}/${university_id})`);
 
+    const payload = { career_id, faculty_id, university_id };
+    if (root_folder_url) {
+      payload.root_folder_url = root_folder_url;
+    }
+
     const response = await axios.post(
       webhookUrl,
-      { career_id, faculty_id, university_id },
+      payload,
       {
         headers: { 'Content-Type': 'application/json' },
         timeout: 30000,
@@ -127,9 +183,10 @@ export const createCareerFolder = async (career_id, faculty_id, university_id) =
  * @param {String} career_id - ID de la carrera padre
  * @param {String} faculty_id - ID de la facultad
  * @param {String} university_id - ID de la universidad
+ * @param {String} root_folder_url - URL de la carpeta raíz del sistema
  * @returns {Promise<Object>} Respuesta del webhook
  */
-export const createCourseFolder = async (course_id, career_id, faculty_id, university_id) => {
+export const createCourseFolder = async (course_id, career_id, faculty_id, university_id, root_folder_url = null) => {
   try {
     const webhookUrl = process.env.N8N_CREATE_COURSE_FOLDER_WEBHOOK;
 
@@ -140,9 +197,14 @@ export const createCourseFolder = async (course_id, career_id, faculty_id, unive
 
     console.log(`📁 Creando carpeta de materia: ${course_id} (en ${career_id}/${faculty_id}/${university_id})`);
 
+    const payload = { course_id, career_id, faculty_id, university_id };
+    if (root_folder_url) {
+      payload.root_folder_url = root_folder_url;
+    }
+
     const response = await axios.post(
       webhookUrl,
-      { course_id, career_id, faculty_id, university_id },
+      payload,
       {
         headers: { 'Content-Type': 'application/json' },
         timeout: 30000,
@@ -169,9 +231,10 @@ export const createCourseFolder = async (course_id, career_id, faculty_id, unive
  * @param {String} career_id - ID de la carrera
  * @param {String} faculty_id - ID de la facultad
  * @param {String} university_id - ID de la universidad
+ * @param {String} root_folder_url - URL de la carpeta raíz del sistema
  * @returns {Promise<Object>} Respuesta del webhook (incluye entregas_folder_id y rubricas_folder_id)
  */
-export const createCommissionFolder = async (commission_id, course_id, career_id, faculty_id, university_id) => {
+export const createCommissionFolder = async (commission_id, course_id, career_id, faculty_id, university_id, root_folder_url = null) => {
   try {
     const webhookUrl = process.env.N8N_CREATE_COMMISSION_FOLDER_WEBHOOK;
 
@@ -182,9 +245,14 @@ export const createCommissionFolder = async (commission_id, course_id, career_id
 
     console.log(`📁 Creando carpeta de comisión: ${commission_id} (en ${course_id}/${career_id}/${faculty_id}/${university_id})`);
 
+    const payload = { commission_id, course_id, career_id, faculty_id, university_id };
+    if (root_folder_url) {
+      payload.root_folder_url = root_folder_url;
+    }
+
     const response = await axios.post(
       webhookUrl,
-      { commission_id, course_id, career_id, faculty_id, university_id },
+      payload,
       {
         headers: { 'Content-Type': 'application/json' },
         timeout: 45000, // 45 segundos (crea 3 carpetas: comisión + Entregas + Rubricas)
@@ -212,9 +280,10 @@ export const createCommissionFolder = async (commission_id, course_id, career_id
  * @param {String} career_id - ID de la carrera
  * @param {String} faculty_id - ID de la facultad
  * @param {String} university_id - ID de la universidad
+ * @param {String} root_folder_url - URL de la carpeta raíz del sistema
  * @returns {Promise<Object>} Respuesta del webhook
  */
-export const createSubmissionFolder = async (submit_id, commission_id, course_id, career_id, faculty_id, university_id) => {
+export const createSubmissionFolder = async (submit_id, commission_id, course_id, career_id, faculty_id, university_id, root_folder_url = null) => {
   try {
     const webhookUrl = process.env.N8N_CREATE_SUBMISSION_FOLDER_WEBHOOK;
 
@@ -225,9 +294,14 @@ export const createSubmissionFolder = async (submit_id, commission_id, course_id
 
     console.log(`📁 Creando carpeta de submission: ${submit_id} (en ${commission_id}/${course_id}/${career_id}/${faculty_id}/${university_id})`);
 
+    const payload = { submit_id, commission_id, course_id, career_id, faculty_id, university_id };
+    if (root_folder_url) {
+      payload.root_folder_url = root_folder_url;
+    }
+
     const response = await axios.post(
       webhookUrl,
-      { submit_id, commission_id, course_id, career_id, faculty_id, university_id },
+      payload,
       {
         headers: { 'Content-Type': 'application/json' },
         timeout: 30000, // 30 segundos

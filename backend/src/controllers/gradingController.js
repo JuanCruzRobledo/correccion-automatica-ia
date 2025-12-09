@@ -3,6 +3,7 @@
  * Maneja la corrección de exámenes (proxy al webhook de n8n con API key del usuario)
  */
 import User from '../models/User.js';
+import SystemConfig from '../models/SystemConfig.js';
 import FormData from 'form-data';
 import axios from 'axios';
 
@@ -71,6 +72,9 @@ export const gradeSubmission = async (req, res) => {
     const rubricaFile = Array.isArray(req.files.rubrica) ? req.files.rubrica[0] : req.files.rubrica;
     const examenFile = Array.isArray(req.files.examen) ? req.files.examen[0] : req.files.examen;
 
+    // Obtener root_folder_url de la configuración
+    const rootFolderUrl = await SystemConfig.getValue('root_folder_url');
+
     // Crear FormData para enviar a n8n
     const formData = new FormData();
 
@@ -82,6 +86,11 @@ export const gradeSubmission = async (req, res) => {
     formData.append('comision', comision);
     formData.append('apiKey', geminiApiKey); // API key real del usuario
     formData.append('nombre_rubrica', nombre_rubrica);
+
+    // Agregar root_folder_url si está disponible
+    if (rootFolderUrl) {
+      formData.append('root_folder_url', rootFolderUrl);
+    }
 
     // Agregar archivo JSON (rúbrica)
     formData.append('rubrica', rubricaFile.data, {
