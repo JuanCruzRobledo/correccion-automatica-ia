@@ -2,6 +2,14 @@
 # Makefile - Sistema de Corrección Automática
 # ============================================
 # Comandos simples para gestionar el stack Docker
+#
+# NOTA PARA WINDOWS: Si make no está disponible, usa:
+#   - start.bat       (equivale a: make setup && make start)
+#   - scripts/setup.bat   (equivale a: make setup)
+#   - docker-compose up -d  (equivale a: make start)
+#   - docker-compose down   (equivale a: make stop)
+#
+# O instala make para Windows desde: http://gnuwin32.sourceforge.net/packages/make.htm
 
 .PHONY: help setup start stop restart logs logs-f status clean reset build rebuild test health check-env troubleshoot
 
@@ -12,6 +20,18 @@ YELLOW := \033[1;33m
 RED := \033[0;31m
 NC := \033[0m # No Color
 
+# Detectar sistema operativo
+ifeq ($(OS),Windows_NT)
+    SHELL := cmd.exe
+    SETUP_SCRIPT := scripts\setup.bat
+    CHECK_ENV_SCRIPT := scripts\check-env.bat
+    TROUBLESHOOT_SCRIPT := scripts\troubleshoot.bat
+else
+    SETUP_SCRIPT := scripts/setup.sh
+    CHECK_ENV_SCRIPT := scripts/check-env.sh
+    TROUBLESHOOT_SCRIPT := scripts/troubleshoot.sh
+endif
+
 # ============================================
 # Help - Mostrar todos los comandos disponibles
 # ============================================
@@ -20,23 +40,31 @@ help:
 	@echo "$(CYAN)  Sistema de Corrección Automática$(NC)"
 	@echo "$(CYAN)============================================$(NC)"
 	@echo ""
-	@echo "$(GREEN)Comandos disponibles:$(NC)"
+	@echo "$(GREEN)Inicio Rápido:$(NC)"
+	@echo ""
+	@echo "  $(YELLOW)make setup && make start$(NC)  - Primera vez (configura e inicia)"
+	@echo ""
+	@echo "$(GREEN)Comandos principales:$(NC)"
 	@echo ""
 	@echo "  $(YELLOW)make setup$(NC)       - Configuración inicial (solo primera vez)"
 	@echo "  $(YELLOW)make start$(NC)       - Iniciar todos los servicios"
 	@echo "  $(YELLOW)make stop$(NC)        - Detener todos los servicios"
 	@echo "  $(YELLOW)make restart$(NC)     - Reiniciar todos los servicios"
-	@echo "  $(YELLOW)make logs$(NC)        - Ver logs de todos los servicios (últimas líneas)"
 	@echo "  $(YELLOW)make logs-f$(NC)      - Ver logs en tiempo real (follow)"
 	@echo "  $(YELLOW)make status$(NC)      - Ver estado de los servicios"
+	@echo ""
+	@echo "$(GREEN)Diagnóstico:$(NC)"
+	@echo ""
 	@echo "  $(YELLOW)make health$(NC)      - Verificar health checks de todos los servicios"
+	@echo "  $(YELLOW)make check-env$(NC)   - Verificar variables de entorno"
+	@echo "  $(YELLOW)make troubleshoot$(NC)- Diagnóstico completo del sistema"
+	@echo ""
+	@echo "$(GREEN)Mantenimiento:$(NC)"
+	@echo ""
 	@echo "  $(YELLOW)make build$(NC)       - Construir/reconstruir imágenes"
 	@echo "  $(YELLOW)make rebuild$(NC)     - Reconstruir imágenes sin cache"
 	@echo "  $(YELLOW)make clean$(NC)       - Limpiar contenedores y redes"
 	@echo "  $(YELLOW)make reset$(NC)       - Reset completo (elimina volúmenes)"
-	@echo "  $(YELLOW)make test$(NC)        - Probar conectividad de servicios"
-	@echo "  $(YELLOW)make check-env$(NC)   - Verificar variables de entorno"
-	@echo "  $(YELLOW)make troubleshoot$(NC)- Diagnóstico completo del sistema"
 	@echo ""
 	@echo "$(GREEN)Servicios individuales:$(NC)"
 	@echo ""
@@ -55,6 +83,11 @@ help:
 	@echo "  Backend:   $(CYAN)http://localhost:5000$(NC)"
 	@echo "  N8N:       $(CYAN)http://localhost:5678$(NC) (admin/admin123)"
 	@echo ""
+	@echo "$(CYAN)Alternativas para Windows (si make no funciona):$(NC)"
+	@echo "  start.bat          - Iniciar sistema (setup + start)"
+	@echo "  docker-compose up -d   - Iniciar servicios"
+	@echo "  docker-compose down    - Detener servicios"
+	@echo ""
 
 # ============================================
 # Setup - Configuración inicial
@@ -64,7 +97,11 @@ setup:
 	@echo "$(CYAN)  Configuración Inicial$(NC)"
 	@echo "$(CYAN)============================================$(NC)"
 	@echo ""
-	@bash scripts/setup.sh
+ifeq ($(OS),Windows_NT)
+	@cmd /c $(SETUP_SCRIPT)
+else
+	@bash $(SETUP_SCRIPT)
+endif
 
 # ============================================
 # Start - Iniciar servicios
@@ -246,10 +283,18 @@ update:
 # Check Env - Verificar variables de entorno
 # ============================================
 check-env:
-	@bash scripts/check-env.sh
+ifeq ($(OS),Windows_NT)
+	@cmd /c $(CHECK_ENV_SCRIPT)
+else
+	@bash $(CHECK_ENV_SCRIPT)
+endif
 
 # ============================================
 # Troubleshoot - Diagnóstico del sistema
 # ============================================
 troubleshoot:
-	@bash scripts/troubleshoot.sh
+ifeq ($(OS),Windows_NT)
+	@cmd /c $(TROUBLESHOOT_SCRIPT)
+else
+	@bash $(TROUBLESHOOT_SCRIPT)
+endif

@@ -22,24 +22,37 @@ Sistema completo de corrección automática de entregas académicas utilizando I
 
 ## Inicio Rápido con Docker 🐳
 
-**¿Primera vez usando el sistema? ¡Ejecútalo en 3 comandos!**
+**¿Primera vez usando el sistema? ¡Ejecútalo en minutos!**
 
 ### Requisitos
 - [Docker Desktop](https://docs.docker.com/get-docker/) instalado
 - [Git](https://git-scm.com/downloads) instalado
 
-### Instalación (3 pasos)
+### Instalación
 
+#### Windows (con .bat)
+```batch
+# 1. Clonar repositorio
+git clone https://github.com/tu-usuario/proyecto-correccion.git
+cd proyecto-correccion
+
+# 2. Ejecutar script de inicio (hace setup automáticamente)
+start.bat
+```
+
+#### Linux/Mac o con make
 ```bash
 # 1. Clonar repositorio
 git clone https://github.com/tu-usuario/proyecto-correccion.git
 cd proyecto-correccion
 
-# 2. Setup inicial
+# 2. Setup inicial y arranque
 make setup
-
-# 3. Editar .env (solo MONGODB_URI es obligatorio) y luego iniciar
+# Edita .env (solo MONGODB_URI es obligatorio)
 make start
+
+# O usa el script:
+./start.sh
 ```
 
 ### Acceder al Sistema
@@ -48,9 +61,25 @@ make start
 - **Backend:** http://localhost:5000
 - **N8N:** http://localhost:5678 (admin/admin123)
 
-### Comandos Útiles
+### Comandos Disponibles
 
+#### Windows (sin make)
+```batch
+start.bat                   # Iniciar sistema completo
+stop.bat                    # Detener servicios
+docker-compose up -d        # Iniciar servicios manualmente
+docker-compose down         # Detener servicios manualmente
+docker-compose logs -f      # Ver logs en tiempo real
+docker-compose ps           # Ver estado
+```
+
+#### Linux/Mac (con scripts o make)
 ```bash
+# Con scripts
+./start.sh        # Iniciar servicios
+./stop.sh         # Detener servicios
+
+# Con make
 make start        # Iniciar servicios
 make stop         # Detener servicios
 make logs-f       # Ver logs en tiempo real
@@ -62,9 +91,11 @@ make help         # Ver todos los comandos
 ### Documentación Completa
 
 - **📖 [Guía Completa de Docker](README-DOCKER.md)** - Instalación detallada, configuración y troubleshooting
-- **⚡ [Quick Start](QUICK-START.md)** - Guía ultra rápida
-- **🌐 [Networking](NETWORKING.md)** - Comunicación entre servicios
+- **⚡ [Quick Start](QUICK-START.md)** - Guía ultra rápida (3 pasos)
+- **🌐 [Networking](NETWORKING.md)** - Comunicación entre servicios y troubleshooting de red
+- **👥 [Contributing](CONTRIBUTING.md)** - Guía para desarrolladores
 - **🔧 [Configurar N8N](n8n/README-PRECONFIGURACION.md)** - Preconfigurar workflows y credenciales
+- **📚 [Toda la Documentación](docs/README.md)** - Índice completo de documentación
 
 ---
 
@@ -441,23 +472,32 @@ correcion-automatica/
 
 ## Documentacion
 
-### Guias Principales
+### Documentación Principal (raíz)
 
-| Documento | Descripcion | Ubicacion |
-|-----------|-------------|-----------|
-| **README.md** | Documentacion general del proyecto | Este archivo |
-| **PROYECTO_PLAN.md** | Plan detallado de desarrollo, fases completadas | Raiz |
-| **GUIA_PRUEBAS.md** | Guia paso a paso para probar el sistema | Raiz |
-| **GUIA_TESTING.md** | Testing tecnico de endpoints | Raiz |
+| Documento | Descripción |
+|-----------|-------------|
+| **[Quick Start](QUICK-START.md)** | Inicio rápido en 3 pasos ⚡ |
+| **[Guía Docker](README-DOCKER.md)** | Instalación completa con Docker 🐳 |
+| **[Networking](NETWORKING.md)** | Troubleshooting de red 🌐 |
+| **[Contributing](CONTRIBUTING.md)** | Guía para desarrolladores 👥 |
 
-### Documentacion por Componente
+### Documentación Técnica (docs/)
 
-| Componente | Documentacion | Ubicacion |
-|------------|---------------|-----------|
-| **Backend** | API REST, endpoints, modelos | `proyecto-correccion/backend/README.md` |
-| **Frontend** | Componentes, flujos de usuario, setup | `proyecto-correccion/frontend-*/README.md` |
-| **n8n Flujos** | Webhooks, configuracion, troubleshooting | `n8n-workflows/README.md` |
-| **Consolidador** | Herramienta de consolidacion de proyectos | `proyecto-correccion/CONSOLIDATOR_README.md` |
+| Documento | Descripción |
+|-----------|-------------|
+| **[Índice de Documentación](docs/README.md)** | Índice completo 📚 |
+| **[Guía de Testing](docs/reference/GUIA_TESTING.md)** | Testing completo |
+| **[Configuración y Despliegue](docs/reference/GUIA_CONFIGURACION_Y_DESPLIEGUE.md)** | Deploy en producción |
+| **[Documentos Históricos](docs/completed/)** | Estado histórico y tareas completadas |
+
+### Documentación por Componente
+
+| Componente | Documentación |
+|------------|---------------|
+| **Backend** | [backend/README.md](backend/README.md) - API REST, endpoints, modelos |
+| **Frontend** | [frontend-correccion-automatica-n8n/README.md](frontend-correccion-automatica-n8n/README.md) |
+| **n8n Flujos** | [n8n-workflows/README.md](n8n-workflows/README.md) - Webhooks y configuración |
+| **Scripts** | [scripts/README.md](scripts/README.md) - Scripts de utilidad |
 
 ---
 

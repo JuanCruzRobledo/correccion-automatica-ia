@@ -50,7 +50,19 @@ Accede a:
 
 ## 📋 Comandos Esenciales
 
+### Windows (scripts .bat)
+```batch
+start.bat        # Iniciar
+stop.bat         # Detener
+```
+
+### Linux/Mac (scripts .sh o make)
 ```bash
+# Con scripts
+./start.sh       # Iniciar
+./stop.sh        # Detener
+
+# Con make
 make start       # Iniciar
 make stop        # Detener
 make logs-f      # Ver logs
