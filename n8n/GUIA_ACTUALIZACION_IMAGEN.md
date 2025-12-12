@@ -9,7 +9,8 @@ Este documento detalla el flujo de trabajo para realizar mantenimiento, agregar 
 Antes de generar una nueva imagen, necesitamos levantar N8N conectado a los datos locales para guardar los cambios.
 
 ### 1. Preparar permisos (Evitar error Read-Only)
-**Contexto:** En Windows, al detener contenedores, los archivos de base de datos a veces quedan bloqueados o con permisos de *root*, lo que impide que N8N arranque de nuevo.
+
+**Contexto:** En Windows, al detener contenedores, los archivos de base de datos a veces quedan bloqueados o con permisos de _root_, lo que impide que N8N arranque de nuevo.
 **Acción:** Ejecuta este comando en **PowerShell** (estando en la carpeta `n8n/`) para asignar los permisos correctos al usuario `node` (ID 1000).
 
 ```powershell
@@ -17,7 +18,7 @@ docker run --rm -v "${PWD}/data:/data" alpine chown -R 1000:1000 /data
 ```
 
 2. Levantar N8N en modo configuración
-Ejecuta el contenedor n8n-config montando tu carpeta local data/.
+   Ejecuta el contenedor n8n-config montando tu carpeta local data/.
 
 ```powershell
 # Asegúrate de no tener una instancia previa trabada
@@ -28,18 +29,19 @@ docker run -d `
   --name n8n-config `
   -p 5678:5678 `
   -e N8N_BASIC_AUTH_ACTIVE=false `
-  -v "${PWD}/data:/home/node/.n8n" `
+  -v "${PWD}/n8n/data:/home/node/.n8n" `
   n8nio/n8n:latest
 ```
+
 3. Realizar cambios
-Accede a http://localhost:5678.
+   Accede a http://localhost:5678.
 
 Realiza tus cambios (importar workflows, autenticar credenciales de Google, cambiar settings).
 
 Importante: Todo lo que hagas se está guardando en tu carpeta local n8n/data/.
 
 4. Finalizar edición
-Una vez terminados los cambios, detén y elimina el contenedor para liberar la base de datos y permitir que la imagen se construya correctamente.
+   Una vez terminados los cambios, detén y elimina el contenedor para liberar la base de datos y permitir que la imagen se construya correctamente.
 
 ```powershell
 docker stop n8n-config
@@ -84,6 +86,5 @@ docker-compose up -d n8n
 Resumen de Comandos Rápidos
 Acción | Terminal |Comando
 1.Arreglar Permisos | PowerShell | docker run --rm -v "${PWD}/data:/data" alpine chown -R 1000:1000 /data
-2.Iniciar Config | PowerShell | docker run -d --name n8n-config -p 5678:5678 -e N8N_BASIC_AUTH_ACTIVE=false -v "${PWD}/data:/home/node/.n8n" n8nio/n8n:latest 
-3.Guardar y Salir | PowerShell |docker stop n8n-config; docker rm n8n-config
-4. Build & PushGit | Bash | ./build-preconfigured-image.sh
+2.Iniciar Config | PowerShell | docker run -d --name n8n-config -p 5678:5678 -e N8N_BASIC_AUTH_ACTIVE=false -v "${PWD}/data:/home/node/.n8n" n8nio/n8n:latest
+3.Guardar y Salir | PowerShell |docker stop n8n-config; docker rm n8n-config 4. Build & PushGit | Bash | ./build-preconfigured-image.sh

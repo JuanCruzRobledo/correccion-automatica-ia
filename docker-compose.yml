@@ -105,7 +105,7 @@ services:
   n8n:
     # OPCIÓN 1: Imagen oficial (para desarrollo o primera configuración)
     # Descomenta esto si aún no has creado tu imagen preconfigurada
-    image: juancruzrobledo/n8n-correcion-automatica:latest
+    image: juancruzrobledo/n8n-correcion-automatica:v2
 
     # OPCIÓN 2: Imagen preconfigurada (para producción)
     # Una vez que hayas seguido n8n/README-PRECONFIGURACION.md, comenta la línea anterior
