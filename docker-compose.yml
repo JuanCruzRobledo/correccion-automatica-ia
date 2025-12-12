@@ -38,6 +38,7 @@ services:
       N8N_GRADING_WEBHOOK_URL: http://n8n:5678/webhook/corregir
       N8N_SPREADSHEET_WEBHOOK_URL: http://n8n:5678/webhook/spreadsheet
       N8N_BATCH_GRADING_WEBHOOK_URL: http://n8n:5678/webhook/automatico
+      N8N_WEBHOOK_GET_CORRECTIONS: http://n8n:5678/webhook/get-student-corrections
 
       # N8N Webhooks - Creación de carpetas
       SEED_CREATE_DRIVE_FOLDERS: "true"
