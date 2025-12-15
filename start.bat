@@ -109,13 +109,13 @@ if not exist .env (
 )
 
 REM Iniciar servicios
-echo [INFO] Iniciando servicios...
+echo [INFO] Reconstruyendo e iniciando servicios...
 echo.
 
 echo.
-echo Comando a ejecutar: %DOCKER_COMPOSE_CMD% up -d
+echo Comando a ejecutar: %DOCKER_COMPOSE_CMD% up -d --build
 echo.
-%DOCKER_COMPOSE_CMD% up -d
+%DOCKER_COMPOSE_CMD% up -d --build
 set COMPOSE_ERROR=%ERRORLEVEL%
 echo.
 echo DEBUG: Codigo de salida = %COMPOSE_ERROR%
