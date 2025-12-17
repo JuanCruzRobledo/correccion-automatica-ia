@@ -103,13 +103,17 @@ make help         # Ver todos los comandos
 
 Sistema integral para **automatizar la correccion de trabajos practicos, parciales y finales** en entornos academicos universitarios. Utiliza **Google Gemini AI** para evaluar codigo, documentos y entregas de alumnos segun rubricas personalizadas.
 
+**🎉 NUEVA VERSIÓN (Diciembre 2025)**: Sistema completamente refactorizado para usar **almacenamiento local + MongoDB** eliminando dependencias de Google Drive y Google Sheets. Más simple, más rápido, más portable.
+
 ### Problema que resuelve
 
 - **Ahorra tiempo**: Corrige automaticamente entregas de alumnos en segundos
 - **Consistencia**: Aplica los mismos criterios de evaluacion a todos los alumnos
 - **Rubricas desde PDF**: Genera automaticamente rubricas estructuradas desde consignas en PDF
-- **Automatizacion**: Integra con Google Sheets para registro automatico de notas
+- **Almacenamiento local**: Todos los archivos se guardan en el servidor (no requiere Google Drive)
+- **Base de datos unificada**: MongoDB como única fuente de verdad
 - **Feedback detallado**: Proporciona resumen por criterios, fortalezas y recomendaciones
+- **PDFs de devolución**: Genera PDFs profesionales con correcciones desde MongoDB
 
 ### Para quien es?
 
@@ -154,15 +158,16 @@ Sistema integral para **automatizar la correccion de trabajos practicos, parcial
 - **Fortalezas** identificadas en el codigo
 - **Recomendaciones** especificas de mejora
 
-### Integracion con Google Sheets
-- Subida automatica de resultados
-- Registro de notas por alumno
-- Historial de evaluaciones
+### Almacenamiento y Gestión
+- **Almacenamiento local**: Archivos en `backend/uploads/submissions/`
+- **MongoDB**: Base de datos única para metadatos y correcciones
+- **Sin dependencias cloud**: No requiere Google Drive ni Google Sheets
+- **PDFs de devolución**: Generación directa desde MongoDB con PDFKit
 
 ### Correccion Batch
 - Procesa multiples entregas simultaneamente
-- Sube resultados automaticamente
-- Genera reporte consolidado
+- Guarda resultados en MongoDB
+- Genera ZIP con PDFs de devolución para todos los estudiantes
 
 ### Consolidador de Proyectos
 - Herramienta publica (sin autenticacion)
@@ -180,8 +185,8 @@ Sistema integral para **automatizar la correccion de trabajos practicos, parcial
 |          React + TypeScript + Tailwind CSS                  |
 |                                                             |
 |  +--------------+  +--------------+  +-----------------+    |
-|  | Login (JWT)  |  |  Admin Panel |  |   User View     |    |
-|  |              |  |  (4 CRUD)    |  |   (Correccion)  |    |
+|  | Login (JWT)  |  |  Admin Panel |  | Professor View  |    |
+|  |              |  |  (Multi CRUD)|  | (Submissions)   |    |
 |  +--------------+  +--------------+  +-----------------+    |
 +-------------------------------------------------------------+
                            |  ^
@@ -189,38 +194,46 @@ Sistema integral para **automatizar la correccion de trabajos practicos, parcial
                            v  |
 +-------------------------------------------------------------+
 |                        BACKEND                              |
-|              Node.js + Express + MongoDB                    |
+|         Node.js + Express + MongoDB + Local Storage        |
 |                                                             |
 |  +--------------+  +--------------+  +-----------------+    |
-|  | Auth (JWT)   |  |  CRUD APIs   |  |  n8n Service    |    |
-|  |              |  |  (4 modelos) |  |  (Webhooks)     |    |
+|  | Auth (JWT)   |  |  CRUD APIs   |  | File Storage    |    |
+|  |              |  | Multi-tenant |  | (Local FS)      |    |
+|  +--------------+  +--------------+  +-----------------+    |
+|                                                             |
+|  +--------------+  +--------------+  +-----------------+    |
+|  | PDF Service  |  | Submission   |  |  n8n Webhooks   |    |
+|  | (PDFKit)     |  | Controller   |  |  (Solo Gemini)  |    |
 |  +--------------+  +--------------+  +-----------------+    |
 +-------------------------------------------------------------+
                            |  ^
-                        MongoDB
+                    MongoDB Atlas
                            v  |
 +-------------------------------------------------------------+
-|  Universities    Courses    Rubrics    Users               |
+| Universities  Faculties  Careers  Courses  Commissions     |
+| Rubrics  Submissions  Users                                |
 +-------------------------------------------------------------+
                            |
-                      Webhooks HTTP
+              Webhook HTTP (Solo para IA)
                            v
 +-------------------------------------------------------------+
-|                         n8n WORKFLOWS                       |
+|                    n8n WORKFLOWS (IA)                       |
 |                                                             |
-|  Webhook /rubrica    -> Google Gemini -> Genera rubrica    |
-|  Webhook /corregir   -> Google Gemini -> Evalua entrega    |
-|  Webhook /spreadsheet -> Google Sheets -> Sube resultados  |
-|  Webhook /automatico -> Batch processing -> Correccion     |
+|  Webhook /rubric   -> Google Gemini -> Genera rubrica      |
+|  Webhook /grading  -> Google Gemini -> Evalua entrega      |
 +-------------------------------------------------------------+
                            |  ^
                    +------------------+
-                   |  Google Services |
+                   |  Google Gemini   |
                    |                  |
-                   |  - Gemini AI     |
-                   |  - Sheets API    |
-                   |  - Drive API     |
+                   |  - Gemini 2.5    |
+                   |    Flash         |
                    +------------------+
+
+ALMACENAMIENTO:
+- Archivos: backend/uploads/submissions/{commission}/{rubric}/{student}/
+- Metadatos: MongoDB (submissions, corrections, rubrics)
+- PDFs: Generados on-demand con PDFKit
 ```
 
 ---
@@ -244,10 +257,10 @@ Sistema integral para **automatizar la correccion de trabajos practicos, parcial
 - **Multer** - Upload de archivos
 
 ### Orquestacion y AI
-- **n8n** - Workflow automation
+- **n8n** - Workflow automation (solo para IA)
 - **Google Gemini 2.5 Flash** - Modelo de IA para correccion
-- **Google Sheets API** - Registro de notas
-- **Google Drive API** - Almacenamiento de archivos
+- **PDFKit** - Generación de PDFs de devolución
+- **Archiver** - Compresión de ZIPs para batch
 
 ### DevOps
 - **Git** - Control de versiones
@@ -535,6 +548,108 @@ UserView -> Sube ZIP con todas las entregas -> n8n /automatico
 
 ---
 
+## 🆕 Refactorización Drive → MongoDB (Diciembre 2025)
+
+### ✅ Cambios Implementados
+
+El sistema fue completamente refactorizado para **eliminar dependencias de Google Drive y Google Sheets**, simplificando la arquitectura y mejorando la portabilidad.
+
+#### **Backend - Eliminaciones**
+- ❌ `driveService.js` - Servicio de Google Drive (ELIMINADO)
+- ❌ Endpoints de creación de carpetas en Drive (universidad, facultad, carrera, curso, comisión)
+- ❌ Endpoint `PUT /api/rubrics/:rubricId/spreadsheet` (configuración de planillas)
+- ❌ Función `updateRubricSpreadsheet()` en rubricController
+- ❌ Función `fixRubricDriveFolder()` en rubricController
+- ❌ Variables `.env` obsoletas (15+ variables de webhooks de Drive eliminadas)
+
+#### **Backend - Nuevas Funcionalidades**
+- ✅ `fileStorageService.js` - Almacenamiento local en `backend/uploads/submissions/`
+- ✅ `devolutionPdfService.js` - Generación de PDFs con PDFKit
+- ✅ Endpoint `POST /api/commissions/:commissionId/rubrics/:rubricId/batch-devolution-pdfs` (genera ZIP con PDFs)
+- ✅ Función `generateBatchDevolutionPdfsFromMongo()` - Batch de PDFs desde MongoDB
+- ✅ Modelo `Submission` refactorizado:
+  - Campos nuevos: `file_path`, `file_storage_type`, `file_mime_type`
+  - Campos eliminados: `drive_file_id`, `drive_file_url`, `student_folder_id`
+- ✅ Modelo `Rubric` limpio:
+  - Campos eliminados: `spreadsheet_file_id`, `spreadsheet_file_url`, `drive_folder_id`
+- ✅ Script `seedDatabase.js` optimizado (de ~5 min a ~10 seg)
+
+#### **Frontend - Eliminaciones**
+- ❌ `ConfigureSpreadsheetModal.tsx` (ELIMINADO)
+- ❌ Botón "Configurar planilla"
+- ❌ Botón "Ver en Drive"
+- ❌ Indicadores de estado de planilla (✅/⚠️)
+- ❌ Función `updateSpreadsheet()` en rubricService
+- ❌ Variable `VITE_SPREADSHEET_WEBHOOK_URL` (marcada obsoleta)
+
+#### **Frontend - Mejoras**
+- ✅ `ProfessorView.tsx` simplificado (sin referencias a spreadsheet)
+- ✅ `SubmissionsList.tsx` limpio (solo MongoDB)
+- ✅ Botón "📄 PDFs Devolución" usa nuevo endpoint MongoDB
+
+### ⚠️ Archivos Mantenidos Temporalmente
+
+Los siguientes archivos **se mantienen temporalmente** para comparación y testing. **DEBERÁN SER ELIMINADOS** después de verificar que la generación de PDFs desde MongoDB funciona correctamente:
+
+#### **Para Eliminar Después de Testing:**
+
+1. **`backend/src/services/nodeDevolutionService.js`**
+   - Servicio antiguo que usaba Google Sheets + Python para PDFs
+   - **Reemplazado por**: `devolutionPdfService.js`
+   - **Acción**: Eliminar cuando se confirme que `generateBatchDevolutionPdfsFromMongo()` funciona
+
+2. **`backend/src/services/nodeSimilarityReportService.js`**
+   - Servicio antiguo para reportes de similitud desde Sheets
+   - **Acción**: Eliminar si se confirma que no se usa más
+
+3. **`backend/src/controllers/devolutionController.js` - Funciones:**
+   - `downloadBatchDevolutionPdfs()` (líneas 110-167)
+   - `downloadStudentDevolutionPdf()` (líneas 173-224)
+   - **Reemplazadas por**: `generateBatchDevolutionPdfsFromMongo()`
+   - **Acción**: Eliminar estas funciones después de testing
+
+4. **Endpoint obsoleto (marcado):**
+   - `POST /api/commissions/:commissionId/rubrics/:rubricId/generate-devolution-pdfs`
+   - **Reemplazado por**: `/batch-devolution-pdfs`
+   - **Acción**: Eliminar ruta en `commissionRoutes.js`
+
+### 📝 Plan de Limpieza Post-Testing
+
+```bash
+# 1. Testing (hacer primero):
+# - Probar generación de PDF individual: GET /api/submissions/{id}/devolution-pdf
+# - Probar generación batch: POST /api/commissions/{commissionId}/rubrics/{rubricId}/batch-devolution-pdfs
+# - Verificar que los PDFs se generen correctamente desde MongoDB
+
+# 2. Si el testing es exitoso, eliminar:
+rm backend/src/services/nodeDevolutionService.js
+rm backend/src/services/nodeSimilarityReportService.js
+
+# 3. Editar backend/src/controllers/devolutionController.js:
+# - Eliminar funciones: downloadBatchDevolutionPdfs, downloadStudentDevolutionPdf
+# - Eliminar helpers: getRubricWithSpreadsheet, resolveSheetId
+
+# 4. Editar backend/src/routes/commissionRoutes.js:
+# - Eliminar endpoint obsoleto: POST .../generate-devolution-pdfs
+# - Eliminar imports relacionados
+
+# 5. Actualizar exports en devolutionController.js
+```
+
+### 🎯 Beneficios de la Refactorización
+
+| Aspecto | Antes (Drive + Sheets) | Ahora (MongoDB + Local) |
+|---------|----------------------|-------------------------|
+| **Setup** | Configurar OAuth2, Drive API, Sheets API, n8n workflows | Solo MongoDB + archiver |
+| **Seed Time** | ~5 minutos (creaba carpetas en Drive) | ~10 segundos |
+| **Dependencias** | Google Drive, Sheets, Python, n8n | Solo MongoDB, PDFKit |
+| **Complejidad** | 15+ webhooks de n8n | 2 webhooks (solo IA) |
+| **Storage** | Drive (requiere internet) | Local (funciona offline) |
+| **Portabilidad** | Baja (atado a cuenta Google) | Alta (funciona en cualquier servidor) |
+| **Costo** | Cuotas API de Google | Sin costos adicionales |
+
+---
+
 ## Estado del Proyecto
 
 ### Fases Completadas
@@ -553,29 +668,32 @@ UserView -> Sube ZIP con todas las entregas -> n8n /automatico
 | **Fase 15**: Testing Multi-tenant | Pendiente | 0% | - |
 | **Fase 16**: Frontend - Vistas Específicas por Rol | Completada | 100% | Nov 2025 |
 | **Fase 17**: Documentación y Deploy | Pendiente | 0% | - |
+| **Refactorización Drive → MongoDB** | Completada | 95% | Dic 2025 |
 
-**Progreso total**: ~85% (FASES 1-14, 16 completadas; Fases 15, 17 pendientes)
+**Progreso total**: ~90% (FASES 1-14, 16, Refactorización completadas; Fases 15, 17 pendientes)
 
 ### Funcionalidades Implementadas
 
-- Sistema de autenticación JWT con roles jerárquicos multi-tenant
-- Cambio de contraseña obligatorio en primer login
-- Registro público desactivado (solo admins)
-- CRUD de Universidades, Facultades, Carreras, Cursos y Comisiones
-- CRUD de Rúbricas (JSON + PDF con IA)
-- CRUD de Usuarios con roles jerárquicos
-- Permisos y filtros dinámicos según rol del usuario
-- Vistas específicas por rol (professor-admin, faculty-admin)
-- Layout subordinado para professor-admin (selector de materia → tabs)
-- Paneles informativos en modales para datos jerárquicos
-- Auto-filtrado de datos según contexto del usuario
-- Generación de rúbricas desde PDF con Gemini AI
-- Corrección automática de entregas con IA
-- Subida de resultados a Google Sheets
-- Corrección batch de múltiples entregas
-- Consolidador de proyectos
-- Soft delete en todos los modelos
-- Integración completa Frontend - Backend - n8n
+- ✅ Sistema de autenticación JWT con roles jerárquicos multi-tenant
+- ✅ Cambio de contraseña obligatorio en primer login
+- ✅ Registro público desactivado (solo admins)
+- ✅ CRUD de Universidades, Facultades, Carreras, Cursos y Comisiones
+- ✅ CRUD de Rúbricas (JSON + PDF con IA)
+- ✅ CRUD de Usuarios con roles jerárquicos
+- ✅ Permisos y filtros dinámicos según rol del usuario
+- ✅ Vistas específicas por rol (professor-admin, faculty-admin)
+- ✅ Layout subordinado para professor-admin (selector de materia → tabs)
+- ✅ Paneles informativos en modales para datos jerárquicos
+- ✅ Auto-filtrado de datos según contexto del usuario
+- ✅ Generación de rúbricas desde PDF con Gemini AI
+- ✅ Corrección automática de entregas con IA
+- ✅ **Almacenamiento local de archivos** (backend/uploads/submissions/)
+- ✅ **Generación de PDFs de devolución desde MongoDB**
+- ✅ **Generación batch de PDFs (ZIP)** sin Google Sheets
+- ✅ Corrección batch de múltiples entregas
+- ✅ Consolidador de proyectos
+- ✅ Soft delete en todos los modelos
+- ✅ Sistema completamente independiente de Google Drive/Sheets
 
 ### Proximos Pasos (Fase 4)
 
@@ -614,21 +732,40 @@ UserView -> Sube ZIP con todas las entregas -> n8n /automatico
 
 #### Backend (`backend/.env`)
 ```env
+# Base de datos
 MONGODB_URI=mongodb://localhost:27017/correcion-automatica
+
+# Servidor
 PORT=5000
+NODE_ENV=development
+
+# Autenticación JWT
 JWT_SECRET=tu-secret-super-seguro
 JWT_EXPIRES_IN=7d
+
+# Encriptación
+ENCRYPTION_KEY=tu-encryption-key-de-64-caracteres-hex
+
+# n8n Webhooks (Solo para IA)
 N8N_RUBRIC_WEBHOOK_URL=https://tu-n8n.cloud/webhook/rubrica
 N8N_GRADING_WEBHOOK_URL=https://tu-n8n.cloud/webhook/corregir
-N8N_SPREADSHEET_WEBHOOK_URL=https://tu-n8n.cloud/webhook/spreadsheet
+
+# CORS
 CORS_ORIGIN=http://localhost:5173
 ```
 
 #### Frontend (`frontend/.env`)
 ```env
+# Backend API
 VITE_API_URL=http://localhost:5000
-VITE_N8N_GRADING_WEBHOOK=https://tu-n8n.cloud/webhook/corregir
-VITE_N8N_SPREADSHEET_WEBHOOK=https://tu-n8n.cloud/webhook/spreadsheet
+
+# n8n Webhooks (Solo para IA)
+VITE_RUBRIC_WEBHOOK_URL=https://tu-n8n.cloud/webhook/rubric
+VITE_GRADING_WEBHOOK_URL=https://tu-n8n.cloud/webhook/grading
+VITE_BATCH_GRADING_WEBHOOK_URL=https://tu-n8n.cloud/webhook/batch-grading
+
+# OBSOLETO - Google Sheets (Ya no se usa)
+# VITE_SPREADSHEET_WEBHOOK_URL ya no es necesario
 ```
 
 #### n8n (variables de entorno o settings)
@@ -849,6 +986,6 @@ Para problemas, sugerencias o consultas:
 
 ---
 
-**Última actualización**: Noviembre 2025
-**Versión**: 1.0
-**Estado**: En desarrollo (~85% completado - FASES 1-14, 16)
+**Última actualización**: Diciembre 2025
+**Versión**: 2.0 (Refactorización MongoDB)
+**Estado**: En desarrollo (~90% completado - FASES 1-14, 16 + Refactorización)

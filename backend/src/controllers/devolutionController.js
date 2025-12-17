@@ -2,11 +2,11 @@
  * Devolution Controller
  * Controlador para generación de PDFs de devolución individual y batch
  */
+import archiver from 'archiver';
 import DevolutionPdfService from '../services/devolutionPdfService.js';
 import Submission from '../models/Submission.js';
 import Commission from '../models/Commission.js';
 import Rubric from '../models/Rubric.js';
-import NodeDevolutionService from '../services/nodeDevolutionService.js';
 
 const getRubricWithSpreadsheet = async (rubricId) => {
   const rubric = await Rubric.findOne({ rubric_id: rubricId });
@@ -34,19 +34,30 @@ const resolveSheetId = (rubric) => {
 };
 
 /**
- * GET /api/submissions/:submissionId/devolution-pdf
+ * GET /api/submissions/:id/devolution-pdf
  * Descarga PDF de devolución individual
  */
 export const downloadIndividualDevolutionPdf = async (req, res) => {
   try {
-    const { submissionId } = req.params;
+    const { id } = req.params;
 
-    console.log(`📄 Generando PDF individual para submission: ${submissionId}`);
+    console.log(`📄 Generando PDF individual para submission: ${id}`);
 
-    // Obtener submission
-    const submission = await Submission.findOne({ submission_id: submissionId, deleted: false });
+    // El frontend puede enviar tanto _id (ObjectId) como submission_id (string custom)
+    // Intentamos buscar por ambos
+    let submission;
 
+    // Intentar buscar por _id si parece un ObjectId (24 caracteres hex)
+    if (/^[0-9a-fA-F]{24}$/.test(id)) {
+      submission = await Submission.findById(id);
+    }
+
+    // Si no se encontró, buscar por submission_id (campo custom)
     if (!submission) {
+      submission = await Submission.findOne({ submission_id: id, deleted: false });
+    }
+
+    if (!submission || submission.deleted) {
       return res.status(404).json({
         success: false,
         message: 'Submission no encontrada',
@@ -261,9 +272,134 @@ export const updateCorrectionsFromExcel = async (req, res) => {
   }
 };
 
+/**
+ * POST /api/commissions/:commissionId/rubrics/:rubricId/batch-devolution-pdfs
+ * Genera y descarga un ZIP con todos los PDFs de devolución desde MongoDB
+ * (Versión refactorizada que no depende de Google Sheets)
+ */
+export const generateBatchDevolutionPdfsFromMongo = async (req, res) => {
+  try {
+    const { commissionId, rubricId } = req.params;
+
+    // Validar parámetros
+    if (!commissionId || !rubricId) {
+      return res.status(400).json({
+        success: false,
+        message: 'commissionId y rubricId son requeridos',
+      });
+    }
+
+    console.log(`📦 Generando batch de PDFs desde MongoDB: ${commissionId} / ${rubricId}`);
+
+    // Obtener comisión y rúbrica para nombres
+    const commission = await Commission.findOne({ commission_id: commissionId });
+    const rubric = await Rubric.findOne({ rubric_id: rubricId });
+
+    if (!rubric) {
+      return res.status(404).json({
+        success: false,
+        message: 'Rúbrica no encontrada',
+      });
+    }
+
+    if (rubric.commission_id !== commissionId) {
+      return res.status(400).json({
+        success: false,
+        message: 'La rúbrica no pertenece a la comisión indicada',
+      });
+    }
+
+    // Obtener todas las submissions corregidas
+    const submissions = await Submission.find({
+      commission_id: commissionId,
+      rubric_id: rubricId,
+      status: 'corrected',
+      deleted: false,
+    });
+
+    if (submissions.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No hay submissions corregidas para esta rúbrica',
+      });
+    }
+
+    console.log(`✅ Encontradas ${submissions.length} submissions corregidas`);
+
+    // Configurar headers para descarga inmediata
+    const timestamp = Date.now();
+    const fileName = `devoluciones_${commissionId}_${rubricId}_${timestamp}.zip`;
+
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+    // Crear archivo ZIP en streaming
+    const archive = archiver('zip', {
+      zlib: { level: 9 }, // Compresión máxima
+    });
+
+    // Pipe del archive al response
+    archive.pipe(res);
+
+    // Error handler
+    archive.on('error', (err) => {
+      console.error('❌ Error creando ZIP:', err);
+      throw err;
+    });
+
+    const commissionName = commission?.name || commissionId;
+    const rubricName = rubric.name || rubricId;
+
+    // Generar PDFs y agregarlos al ZIP
+    for (const submission of submissions) {
+      try {
+        console.log(`📄 Generando PDF para: ${submission.student_name}`);
+
+        const pdfBuffer = await DevolutionPdfService.generateDevolutionPdf(
+          submission,
+          commissionName,
+          rubricName
+        );
+
+        const pdfFileName = `${submission.student_name.replace(/\s+/g, '_')}_devolucion.pdf`;
+        archive.append(pdfBuffer, { name: pdfFileName });
+
+        console.log(`✅ PDF agregado al ZIP: ${pdfFileName}`);
+      } catch (error) {
+        console.error(`❌ Error generando PDF para ${submission.student_name}:`, error);
+        // Continuar con el siguiente aunque uno falle
+      }
+    }
+
+    // Finalizar el archivo ZIP
+    await archive.finalize();
+
+    console.log(`✅ ZIP generado exitosamente: ${fileName}`);
+  } catch (error) {
+    console.error('❌ Error generando batch de PDFs desde MongoDB:', error);
+
+    // Si ya se enviaron headers, no podemos enviar JSON
+    if (!res.headersSent) {
+      const statusCode =
+        Number.isInteger(error.statusCode) && error.statusCode >= 400 && error.statusCode < 600
+          ? error.statusCode
+          : 500;
+      res.status(statusCode).json({
+        success: false,
+        message: error.message || 'Error al generar el ZIP de PDFs',
+        error: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      });
+    } else {
+      // Si ya se enviaron headers, destruir el stream
+      res.destroy();
+    }
+  }
+};
+
 export default {
   downloadIndividualDevolutionPdf,
   downloadBatchDevolutionPdfs,
   downloadStudentDevolutionPdf,
   updateCorrectionsFromExcel,
+  generateBatchDevolutionPdfsFromMongo,
 };

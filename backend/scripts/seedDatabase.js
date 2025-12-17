@@ -1,6 +1,7 @@
 /**
- * Seed simplificado con integracion opcional a Google Drive (via n8n)
+ * Seed Database - Datos iniciales para desarrollo
  * Estructura: UTN -> FRM -> 2 carreras -> 3 materias c/u -> 4 comisiones c/u
+ * Solo crea datos en MongoDB (sin Drive)
  */
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
@@ -10,20 +11,9 @@ import Faculty from '../src/models/Faculty.js';
 import Career from '../src/models/Career.js';
 import Course from '../src/models/Course.js';
 import Commission from '../src/models/Commission.js';
-// import Rubric, { RUBRIC_TYPES } from '../src/models/Rubric.js'; // Eliminado: No crear rúbricas en seed
 import User from '../src/models/User.js';
-import * as driveService from '../src/services/driveService.js';
 
 dotenv.config();
-
-const seedDriveEnabled = process.env.SEED_CREATE_DRIVE_FOLDERS === 'true';
-const driveStats = {
-  universities: { success: 0, failed: 0 },
-  faculties: { success: 0, failed: 0 },
-  careers: { success: 0, failed: 0 },
-  courses: { success: 0, failed: 0 },
-  commissions: { success: 0, failed: 0 },
-};
 
 // Dataset reducido
 const universities = [{ university_id: 'utn', name: 'Universidad Tecnologica Nacional (UTN)' }];
@@ -43,26 +33,14 @@ const courses = [
 ];
 
 // ============================================
-// RÚBRICAS ELIMINADAS
+// NOTA: Las rúbricas se crean manualmente desde el panel
 // ============================================
 // Las rúbricas ahora se crean manualmente por los usuarios
 // ya que cada profesor tiene sus propias consignas y criterios.
-// Esto permite mayor flexibilidad y personalización.
-
-const trackDriveResult = (key, idLabel, result, reason) => {
-  const succeeded = result && result.success !== false;
-  if (succeeded) {
-    driveStats[key].success += 1;
-  } else {
-    driveStats[key].failed += 1;
-    const detail = reason?.message || result?.message || 'Error desconocido';
-    console.warn(`WARN  Fallo carpeta ${key.slice(0, -1)} ${idLabel}: ${detail}`);
-  }
-};
 
 const seedDatabase = async () => {
   try {
-    console.log('>>> Iniciando migracion de datos con Drive opcional...\n');
+    console.log('>>> Iniciando seed de base de datos...\n');
 
     await connectDB();
 
@@ -70,55 +48,21 @@ const seedDatabase = async () => {
     await mongoose.connection.dropDatabase();
     console.log('OK  Base eliminada completamente\n');
 
-    console.log('>>> Migrando universidades...');
+    console.log('>>> Creando universidades...');
     const createdUniversities = await University.insertMany(universities);
     console.log(`OK  ${createdUniversities.length} universidades creadas\n`);
-    if (seedDriveEnabled) {
-      const uniResults = await Promise.allSettled(
-        createdUniversities.map(u => driveService.createUniversityFolder(u.university_id))
-      );
-      uniResults.forEach((res, idx) =>
-        trackDriveResult('universities', createdUniversities[idx].university_id, res.status === 'fulfilled' ? res.value : null, res.reason)
-      );
-    }
 
-    console.log('>>> Migrando facultades...');
+    console.log('>>> Creando facultades...');
     const createdFaculties = await Faculty.insertMany(faculties);
     console.log(`OK  ${createdFaculties.length} facultades creadas\n`);
-    if (seedDriveEnabled) {
-      const facResults = await Promise.allSettled(
-        createdFaculties.map(f => driveService.createFacultyFolder(f.faculty_id, f.university_id))
-      );
-      facResults.forEach((res, idx) =>
-        trackDriveResult('faculties', createdFaculties[idx].faculty_id, res.status === 'fulfilled' ? res.value : null, res.reason)
-      );
-    }
 
-    console.log('>>> Migrando carreras...');
+    console.log('>>> Creando carreras...');
     const createdCareers = await Career.insertMany(careers);
     console.log(`OK  ${createdCareers.length} carreras creadas\n`);
-    if (seedDriveEnabled) {
-      const careerResults = await Promise.allSettled(
-        createdCareers.map(c => driveService.createCareerFolder(c.career_id, c.faculty_id, c.university_id))
-      );
-      careerResults.forEach((res, idx) =>
-        trackDriveResult('careers', createdCareers[idx].career_id, res.status === 'fulfilled' ? res.value : null, res.reason)
-      );
-    }
 
-    console.log('>>> Migrando cursos...');
+    console.log('>>> Creando cursos...');
     const createdCourses = await Course.insertMany(courses);
     console.log(`OK  ${createdCourses.length} cursos creados\n`);
-    if (seedDriveEnabled) {
-      const courseResults = await Promise.allSettled(
-        createdCourses.map(c =>
-          driveService.createCourseFolder(c.course_id, c.career_id, c.faculty_id, c.university_id)
-        )
-      );
-      courseResults.forEach((res, idx) =>
-        trackDriveResult('courses', createdCourses[idx].course_id, res.status === 'fulfilled' ? res.value : null, res.reason)
-      );
-    }
 
     console.log('>>> Creando usuarios de prueba...\n');
     const users = [];
@@ -273,25 +217,8 @@ const seedDatabase = async () => {
     }
     const createdCommissions = await Commission.insertMany(commissions);
     console.log(`OK  ${createdCommissions.length} comisiones creadas\n`);
-    if (seedDriveEnabled) {
-      const commissionResults = await Promise.allSettled(
-        createdCommissions.map(c =>
-          driveService.createCommissionFolder(
-            c.commission_id,
-            c.course_id,
-            c.career_id,
-            c.faculty_id,
-            c.university_id
-          )
-        )
-      );
-      commissionResults.forEach((res, idx) =>
-        trackDriveResult('commissions', createdCommissions[idx].commission_id, res.status === 'fulfilled' ? res.value : null, res.reason)
-      );
-    }
 
-    // 7. Rubricas - ELIMINADO
-    // Las rúbricas ahora se crean manualmente desde el panel de administración
+    // Nota: Las rúbricas se crean manualmente desde el panel de administración
     console.log('>>> Rubricas: Se deben crear manualmente desde el panel de administración\n');
 
     // 8. Asignar profesores
@@ -311,9 +238,9 @@ const seedDatabase = async () => {
 
     // Resumen
     console.log('='.repeat(80));
-    console.log('OK  MIGRACION COMPLETADA - SEED SIMPLIFICADO (UTN/FRM)');
+    console.log('✅  SEED COMPLETADO - BASE DE DATOS INICIALIZADA');
     console.log('='.repeat(80));
-    console.log('Resumen MongoDB:');
+    console.log('Datos creados en MongoDB:');
     console.log(`   - Universidades: ${createdUniversities.length}`);
     console.log(`   - Facultades: ${createdFaculties.length}`);
     console.log(`   - Carreras: ${createdCareers.length}`);
@@ -321,17 +248,6 @@ const seedDatabase = async () => {
     console.log(`   - Comisiones: ${createdCommissions.length}`);
     console.log(`   - Rubricas: 0 (crear manualmente desde el panel)`);
     console.log(`   - Usuarios: ${users.length}`);
-    console.log('='.repeat(80));
-    if (seedDriveEnabled) {
-      console.log('Resumen Google Drive:');
-      console.log(`   - Universidades: ${driveStats.universities.success}/${createdUniversities.length} (fallos: ${driveStats.universities.failed})`);
-      console.log(`   - Facultades: ${driveStats.faculties.success}/${createdFaculties.length} (fallos: ${driveStats.faculties.failed})`);
-      console.log(`   - Carreras: ${driveStats.careers.success}/${createdCareers.length} (fallos: ${driveStats.careers.failed})`);
-      console.log(`   - Cursos: ${driveStats.courses.success}/${createdCourses.length} (fallos: ${driveStats.courses.failed})`);
-      console.log(`   - Comisiones (+Entregas/Rubricas): ${driveStats.commissions.success}/${createdCommissions.length} (fallos: ${driveStats.commissions.failed})`);
-    } else {
-      console.log('WARN SEED_CREATE_DRIVE_FOLDERS esta desactivado. Solo se creo la estructura en MongoDB.');
-    }
     console.log('='.repeat(80));
     console.log('\nCredenciales de acceso:');
     console.log('   SUPER-ADMIN: superadmin / admin123');

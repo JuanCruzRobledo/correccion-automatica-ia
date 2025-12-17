@@ -25,6 +25,7 @@ import {
 import {
   downloadBatchDevolutionPdfs,
   downloadStudentDevolutionPdf,
+  generateBatchDevolutionPdfsFromMongo,
 } from '../controllers/devolutionController.js';
 
 const router = express.Router();
@@ -160,7 +161,7 @@ router.get(
 
 /**
  * @route   POST /api/commissions/:commissionId/rubrics/:rubricId/generate-devolution-pdfs
- * @desc    Generar y descargar ZIP con PDFs de devolución para todos los estudiantes
+ * @desc    Generar y descargar ZIP con PDFs de devolución para todos los estudiantes (usando Google Sheets - OBSOLETO)
  * @access  Private (professor, university-admin, super-admin)
  */
 router.post(
@@ -168,6 +169,18 @@ router.post(
   authenticate,
   requireRoles('professor', 'university-admin', 'super-admin'),
   downloadBatchDevolutionPdfs
+);
+
+/**
+ * @route   POST /api/commissions/:commissionId/rubrics/:rubricId/batch-devolution-pdfs
+ * @desc    Generar y descargar ZIP con PDFs de devolución desde MongoDB (NUEVO)
+ * @access  Private (professor, university-admin, super-admin)
+ */
+router.post(
+  '/:commissionId/rubrics/:rubricId/batch-devolution-pdfs',
+  authenticate,
+  requireRoles('professor', 'university-admin', 'super-admin'),
+  generateBatchDevolutionPdfsFromMongo
 );
 
 export default router;

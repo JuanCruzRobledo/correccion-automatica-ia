@@ -11,7 +11,10 @@ import {
   createSubmission,
   updateSubmission,
   deleteSubmission,
+  downloadSubmissionFile,
   createBatchSubmissions,
+  correctBatchSubmissions,
+  correctIndividualSubmission,
 } from '../controllers/submissionController.js';
 import { downloadIndividualDevolutionPdf } from '../controllers/devolutionController.js';
 import { authenticate } from '../middleware/auth.js';
@@ -135,6 +138,18 @@ router.delete(
 );
 
 /**
+ * @route   GET /api/submissions/:id/file
+ * @desc    Descargar archivo original de la submission
+ * @access  Private (professor, university-admin, super-admin)
+ */
+router.get(
+  '/:id/file',
+  authenticate,
+  requireRoles('professor', 'university-admin', 'super-admin'),
+  downloadSubmissionFile
+);
+
+/**
  * @route   GET /api/submissions/:id/devolution-pdf
  * @desc    Descargar PDF de devolución individual para un estudiante
  * @access  Private (professor, university-admin, super-admin)
@@ -144,6 +159,31 @@ router.get(
   authenticate,
   requireRoles('professor', 'university-admin', 'super-admin'),
   downloadIndividualDevolutionPdf
+);
+
+/**
+ * @route   POST /api/submissions/correct-batch
+ * @desc    Corregir múltiples submissions en batch (llama a n8n individualmente)
+ * @access  Private (professor, university-admin, super-admin)
+ * @body    { commission_id, rubric_id }
+ */
+router.post(
+  '/correct-batch',
+  authenticate,
+  requireRoles('professor', 'university-admin', 'super-admin'),
+  correctBatchSubmissions
+);
+
+/**
+ * @route   POST /api/submissions/:id/correct
+ * @desc    Corregir una submission individual
+ * @access  Private (professor, university-admin, super-admin)
+ */
+router.post(
+  '/:id/correct',
+  authenticate,
+  requireRoles('professor', 'university-admin', 'super-admin'),
+  correctIndividualSubmission
 );
 
 export default router;

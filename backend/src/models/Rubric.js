@@ -1,5 +1,7 @@
 /**
  * Modelo de Rúbrica
+ * Define criterios de evaluación para submissions
+ * Sin dependencias de Google Drive/Sheets
  */
 import mongoose from 'mongoose';
 
@@ -91,25 +93,7 @@ const rubricSchema = new mongoose.Schema(
       type: String,
       trim: true,
       default: null,
-    },
-    drive_folder_id: {
-      type: String,
-      trim: true,
-      default: null,
-      index: true,
-    },
-    // ID del archivo entregas.xlsx en Google Drive (agregado para FASE 1)
-    spreadsheet_file_id: {
-      type: String,
-      trim: true,
-      default: null,
-      index: true,
-    },
-    // URL directa al archivo entregas.xlsx (agregado para FASE 1)
-    spreadsheet_file_url: {
-      type: String,
-      trim: true,
-      default: null,
+      comment: 'URL del PDF original de la rúbrica (si fue generada desde PDF)',
     },
     deleted: {
       type: Boolean,

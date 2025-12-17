@@ -1,9 +1,8 @@
 /**
  * SubmissionsList - Lista de entregas de alumnos para una rúbrica
- * Muestra tabla con entregas y acciones disponibles
+ * Vista simplificada con expansión al hacer click
  */
 import { useState, useEffect } from 'react';
-import { Table } from '../shared/Table';
 import { Button } from '../shared/Button';
 import submissionService, { type Submission } from '../../services/submissionService';
 import api from '../../services/api';
@@ -11,19 +10,19 @@ import api from '../../services/api';
 interface SubmissionsListProps {
   rubricId: string;
   commissionId: string;
-  spreadsheetId?: string;
   onRefresh: () => void;
 }
 
 export const SubmissionsList = ({
   rubricId,
   commissionId,
-  spreadsheetId,
   onRefresh,
 }: SubmissionsListProps) => {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [correctingId, setCorrectingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadSubmissions();
@@ -56,11 +55,22 @@ export const SubmissionsList = ({
     }
   };
 
-  const handleViewInDrive = (submission: Submission) => {
-    if (submission.drive_file_url) {
-      window.open(submission.drive_file_url, '_blank');
-    } else {
-      alert('El archivo aún no está disponible en Drive');
+  const handleCorrectIndividual = async (submission: Submission) => {
+    try {
+      setCorrectingId(submission._id);
+
+      const response = await api.post(`/api/submissions/${submission._id}/correct`);
+
+      if (response.data.success) {
+        alert(`✅ Corrección exitosa!\nNota: ${response.data.data.grade}/100`);
+        await loadSubmissions();
+        onRefresh();
+      }
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.message || err.message || 'Error al corregir';
+      alert(`❌ Error: ${errorMsg}`);
+    } finally {
+      setCorrectingId(null);
     }
   };
 
@@ -75,12 +85,10 @@ export const SubmissionsList = ({
 
   const handleDownloadPdf = async (submission: Submission) => {
     try {
-      const encodedName = encodeURIComponent(submission.student_name);
-      const endpoint = spreadsheetId
-        ? `/api/commissions/${commissionId}/rubrics/${rubricId}/students/${encodedName}/devolution-pdf`
-        : `/api/submissions/${submission.submission_id}/devolution-pdf`;
-
-      const response = await api.get<Blob>(endpoint, { responseType: 'blob' });
+      const response = await api.get<Blob>(
+        `/api/submissions/${submission.submission_id}/devolution-pdf`,
+        { responseType: 'blob' }
+      );
       const blob = response.data;
       downloadFile(blob, `${submission.student_name}_devolucion.pdf`);
     } catch (err: unknown) {
@@ -104,127 +112,39 @@ export const SubmissionsList = ({
     });
   };
 
-  const getStatusBadge = (status: Submission['status']) => {
-    const styles = {
-      uploaded: 'bg-accent-1/20 text-accent-1 border-accent-1/30',
-      'pending-correction': 'bg-accent-2/20 text-accent-2 border-accent-2/30',
-      corrected: 'bg-accent-3/20 text-accent-3 border-accent-3/30',
-      failed: 'bg-danger-1/20 text-danger-1 border-danger-1/30',
+  const getStatusConfig = (status: Submission['status']) => {
+    const configs = {
+      uploaded: {
+        bg: 'bg-accent-1/20',
+        text: 'text-accent-1',
+        border: 'border-accent-1/30',
+        label: '✅ Subido',
+      },
+      'pending-correction': {
+        bg: 'bg-accent-2/20',
+        text: 'text-accent-2',
+        border: 'border-accent-2/30',
+        label: '⏳ Corrigiendo',
+      },
+      corrected: {
+        bg: 'bg-accent-3/20',
+        text: 'text-accent-3',
+        border: 'border-accent-3/30',
+        label: '✔️ Corregido',
+      },
+      failed: {
+        bg: 'bg-danger-1/20',
+        text: 'text-danger-1',
+        border: 'border-danger-1/30',
+        label: '❌ Error',
+      },
     };
-
-    const labels = {
-      uploaded: '✅ Subido',
-      'pending-correction': '⏳ Pendiente',
-      corrected: '✔️ Corregido',
-      failed: '❌ Error',
-    };
-
-    return (
-      <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${styles[status]}`}>
-        {labels[status]}
-      </span>
-    );
+    return configs[status];
   };
 
-  const columns = [
-    {
-      header: 'Alumno',
-      accessor: (row: Submission) => (
-        <span className="font-medium text-text-primary">{row.student_name}</span>
-      ),
-    },
-    {
-      header: 'Archivo',
-      accessor: (row: Submission) => (
-        <span className="text-text-secondary text-sm font-mono">{row.file_name}</span>
-      ),
-    },
-    {
-      header: 'Fecha',
-      accessor: (row: Submission) => (
-        <span className="text-text-secondary text-sm">{formatDate(row.createdAt)}</span>
-      ),
-    },
-    {
-      header: 'Estado',
-      accessor: (row: Submission) => getStatusBadge(row.status),
-    },
-    {
-      header: 'Nota',
-      accessor: (row: Submission) => (
-        <span className="font-medium text-text-primary">
-          {row.correction?.grade ? `${row.correction.grade}/100` : '-'}
-        </span>
-      ),
-    },
-    {
-      header: 'Acciones',
-      accessor: (row: Submission) => (
-        <div className="flex gap-2">
-          {row.drive_file_url && (
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => handleViewInDrive(row)}
-              title="Ver en Google Drive"
-            >
-              📂 Drive
-            </Button>
-          )}
-
-          {row.status === 'corrected' && row.correction && (
-            <>
-              <Button
-                size="sm"
-                variant="primary"
-                onClick={() => {
-                  // TODO: Implementar modal de detalle de corrección
-                  alert('Detalle de corrección: ' + JSON.stringify(row.correction, null, 2));
-                }}
-                title="Ver detalle de corrección"
-              >
-                📊 Ver
-              </Button>
-
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => handleDownloadPdf(row)}
-                title="Descargar PDF de devolución"
-              >
-                📄 PDF
-              </Button>
-            </>
-          )}
-
-          <Button
-            size="sm"
-            variant={spreadsheetId ? 'secondary' : 'secondary'}
-            disabled={!spreadsheetId}
-            onClick={() => {
-              if (!spreadsheetId) {
-                alert('Configura la planilla de Google Sheets para generar PDFs.');
-                return;
-              }
-              handleDownloadPdf(row);
-            }}
-            title="Descargar PDF individual (planilla)"
-          >
-            🧾 PDF alumno
-          </Button>
-
-          <Button
-            size="sm"
-            variant="danger"
-            onClick={() => handleDelete(row)}
-            title="Eliminar entrega"
-          >
-            🗑️
-          </Button>
-        </div>
-      ),
-    },
-  ];
+  const toggleExpand = (id: string) => {
+    setExpandedId(expandedId === id ? null : id);
+  };
 
   if (loading) {
     return (
@@ -263,11 +183,158 @@ export const SubmissionsList = ({
           </p>
         </div>
       ) : (
-        <Table
-          data={submissions}
-          columns={columns}
-          emptyMessage="No hay entregas para esta rúbrica"
-        />
+        <div className="space-y-2">
+          {submissions.map((submission) => {
+            const isExpanded = expandedId === submission._id;
+            const statusConfig = getStatusConfig(submission.status);
+            const isCorrecting = correctingId === submission._id;
+
+            return (
+              <div
+                key={submission._id}
+                className="bg-bg-secondary border border-border-secondary rounded-xl overflow-hidden transition-all hover:border-accent-1/30"
+              >
+                {/* Vista Colapsada - Clickeable */}
+                <div
+                  className="p-4 cursor-pointer flex items-center justify-between hover:bg-bg-tertiary/50 transition-colors"
+                  onClick={() => toggleExpand(submission._id)}
+                >
+                  <div className="flex items-center gap-4 flex-1">
+                    {/* Nombre */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-text-primary truncate">
+                        {submission.student_name}
+                      </p>
+                    </div>
+
+                    {/* Estado */}
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium border ${statusConfig.bg} ${statusConfig.text} ${statusConfig.border} whitespace-nowrap`}
+                    >
+                      {statusConfig.label}
+                    </span>
+
+                    {/* Nota */}
+                    <div className="w-20 text-right">
+                      <span className="font-semibold text-text-primary">
+                        {submission.correction?.grade ? `${submission.correction.grade}/100` : '-'}
+                      </span>
+                    </div>
+
+                    {/* Icono de expansión */}
+                    <div className="text-text-disabled">
+                      <svg
+                        className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Vista Expandida - Solo botones */}
+                {isExpanded && (
+                  <div className="px-4 pb-4 border-t border-border-secondary/50 pt-4 bg-bg-tertiary/30">
+                    {/* Info adicional */}
+                    <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
+                      <div>
+                        <span className="text-text-disabled">Archivo:</span>
+                        <span className="ml-2 text-text-secondary font-mono">{submission.file_name}</span>
+                      </div>
+                      <div>
+                        <span className="text-text-disabled">Fecha:</span>
+                        <span className="ml-2 text-text-secondary">{formatDate(submission.createdAt)}</span>
+                      </div>
+                    </div>
+
+                    {/* Botones de acción */}
+                    <div className="flex flex-wrap gap-2">
+                      {/* Botón Corregir (para todos los estados) */}
+                      <Button
+                        size="sm"
+                        variant={submission.status === 'corrected' ? 'secondary' : 'primary'}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCorrectIndividual(submission);
+                        }}
+                        loading={isCorrecting}
+                        disabled={isCorrecting || submission.status === 'pending-correction'}
+                        title={
+                          submission.status === 'corrected'
+                            ? 'Volver a corregir'
+                            : submission.status === 'failed'
+                            ? 'Reintentar corrección'
+                            : 'Corregir ahora'
+                        }
+                      >
+                        {isCorrecting ? (
+                          '⏳ Corrigiendo...'
+                        ) : submission.status === 'corrected' ? (
+                          '🔄 Recorregir'
+                        ) : submission.status === 'failed' ? (
+                          '🔄 Reintentar'
+                        ) : (
+                          '✨ Corregir'
+                        )}
+                      </Button>
+
+                      {/* Ver detalle (solo si está corregido) */}
+                      {submission.status === 'corrected' && submission.correction && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // TODO: Implementar modal de detalle
+                              alert('Detalle de corrección:\n\n' + JSON.stringify(submission.correction, null, 2));
+                            }}
+                            title="Ver detalle de corrección"
+                          >
+                            📊 Ver Detalle
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownloadPdf(submission);
+                            }}
+                            title="Descargar PDF de devolución"
+                          >
+                            📄 Descargar PDF
+                          </Button>
+                        </>
+                      )}
+
+                      {/* Eliminar */}
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(submission);
+                        }}
+                        title="Eliminar entrega"
+                      >
+                        🗑️ Eliminar
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );

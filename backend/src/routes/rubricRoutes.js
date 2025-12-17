@@ -12,8 +12,6 @@ import {
   createRubricFromPDF,
   updateRubric,
   deleteRubric,
-  updateRubricSpreadsheet,
-  fixRubricDriveFolder,
 } from '../controllers/rubricController.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
 import { requireRoles } from '../middleware/multiTenant.js';
@@ -88,29 +86,10 @@ router.post('/from-pdf', authenticate, requireAdmin, upload.single('pdf'), creat
 router.put('/:id', authenticate, requireAdmin, updateRubric);
 
 /**
- * @route   PUT /api/rubrics/:rubricId/spreadsheet
- * @desc    Configurar spreadsheet_file_id/URL para una rúbrica
- * @access  Private (professor, university-admin, super-admin)
- */
-router.put(
-  '/:rubricId/spreadsheet',
-  authenticate,
-  requireRoles('professor', 'professor-admin', 'university-admin', 'super-admin', 'admin'),
-  updateRubricSpreadsheet
-);
-
-/**
  * @route   DELETE /api/rubrics/:id
  * @desc    Eliminar rúbrica (baja lógica)
  * @access  Private (solo admin)
  */
 router.delete('/:id', authenticate, requireAdmin, deleteRubric);
-
-/**
- * @route   POST /api/rubrics/:id/fix-drive-folder
- * @desc    Reparar rúbricas sin drive_folder_id (crea carpeta en Drive)
- * @access  Private (professor, admin, super-admin)
- */
-router.post('/:id/fix-drive-folder', authenticate, fixRubricDriveFolder);
 
 export default router;

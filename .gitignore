@@ -31,6 +31,10 @@ nul.*
 tmp/
 .cache/
 
+# Uploads de submissions (archivos de alumnos)
+backend/uploads/
+uploads/
+
 # Docker volumes data (excepto estructura)
 n8n/data/*
 !n8n/data/.gitkeep

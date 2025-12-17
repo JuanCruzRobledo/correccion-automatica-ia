@@ -9,7 +9,6 @@ import { Button } from '../shared/Button';
 import { UploadSubmissionModal } from './UploadSubmissionModal';
 import { SubmissionsList } from './SubmissionsList';
 import { HierarchicalFilters, FilterState } from './HierarchicalFilters';
-import { ConfigureSpreadsheetModal } from './ConfigureSpreadsheetModal';
 import submissionService from '../../services/submissionService';
 import rubricService from '../../services/rubricService';
 import universityService from '../../services/universityService';
@@ -51,7 +50,6 @@ export const ProfessorView = () => {
   const [loadingRubrics, setLoadingRubrics] = useState(false);
   const [error, setError] = useState('');
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [isSpreadsheetModalOpen, setIsSpreadsheetModalOpen] = useState(false);
 
   // Mapa de IDs de universidad a nombres (para super-admin)
   const [universityMap, setUniversityMap] = useState<Record<string, string>>({});
@@ -191,20 +189,6 @@ export const ProfessorView = () => {
     } finally {
       setLoadingRubrics(false);
     }
-  };
-
-  const handleSpreadsheetSaved = (updatedRubric: Rubric) => {
-    setRubrics((prev) =>
-      prev.map((rubric) =>
-        rubric.rubric_id === updatedRubric.rubric_id ? { ...rubric, ...updatedRubric } : rubric
-      )
-    );
-
-    setSelectedRubric((current) =>
-      current && current.rubric_id === updatedRubric.rubric_id ? { ...current, ...updatedRubric } : current
-    );
-
-    setIsSpreadsheetModalOpen(false);
   };
 
   const handleUploadSuccess = () => {
@@ -374,32 +358,7 @@ export const ProfessorView = () => {
                           <p className="text-xs text-text-disabled mt-0.5">
                             Descarga reportes de similitud y genera PDFs de devolución para los estudiantes
                           </p>
-                          <div className="flex items-center gap-3 mt-2 text-xs">
-                            {selectedRubric.spreadsheet_file_id ? (
-                              <span className="text-accent-1 font-semibold">✅ Planilla configurada</span>
-                            ) : (
-                              <span className="text-yellow-400 font-semibold">⚠ Planilla pendiente</span>
-                            )}
-                            {selectedRubric.spreadsheet_file_url && (
-                              <a
-                                href={selectedRubric.spreadsheet_file_url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-accent-1 hover:underline"
-                              >
-                                Abrir planilla
-                              </a>
-                            )}
-                          </div>
                         </div>
-
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => setIsSpreadsheetModalOpen(true)}
-                        >
-                          🗒️ Configurar planilla
-                        </Button>
 
                         <Button
                           size="sm"
@@ -430,18 +389,13 @@ export const ProfessorView = () => {
                         <Button
                           size="sm"
                           variant="primary"
-                          disabled={!selectedRubric.spreadsheet_file_id}
                           onClick={async () => {
                             if (!selectedCommission || !selectedRubric) return;
-                            if (!selectedRubric.spreadsheet_file_id) {
-                              alert('Debes configurar la planilla de Google Sheets primero.');
-                              return;
-                            }
                             if (!confirm('¿Generar PDFs de devolución para todos los estudiantes corregidos?')) return;
 
                             try {
                               const response = await api.post<Blob>(
-                                `/api/commissions/${selectedCommission.commission_id}/rubrics/${selectedRubric.rubric_id}/generate-devolution-pdfs`,
+                                `/api/commissions/${selectedCommission.commission_id}/rubrics/${selectedRubric.rubric_id}/batch-devolution-pdfs`,
                                 {},
                                 { responseType: 'blob' }
                               );
@@ -468,7 +422,6 @@ export const ProfessorView = () => {
                       <SubmissionsList
                         rubricId={selectedRubric.rubric_id}
                         commissionId={selectedCommission.commission_id}
-                        spreadsheetId={selectedRubric.spreadsheet_file_id || ''}
                         onRefresh={() => {}}
                       />
                     )}
@@ -488,15 +441,6 @@ export const ProfessorView = () => {
           rubricId={selectedRubric.rubric_id}
           commissionId={selectedCommission.commission_id}
           onSuccess={handleUploadSuccess}
-        />
-      )}
-
-      {selectedRubric && (
-        <ConfigureSpreadsheetModal
-          isOpen={isSpreadsheetModalOpen}
-          onClose={() => setIsSpreadsheetModalOpen(false)}
-          rubric={selectedRubric}
-          onSaved={handleSpreadsheetSaved}
         />
       )}
     </div>

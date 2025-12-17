@@ -1,6 +1,7 @@
 /**
  * Modelo de Submission (Entrega de Alumno)
  * Representa una entrega de alumno asociada a una rúbrica
+ * Almacenamiento: Local (uploads/submissions/)
  */
 import mongoose from 'mongoose';
 
@@ -72,23 +73,23 @@ const submissionSchema = new mongoose.Schema(
       maxlength: 500,
     },
 
-    // Google Drive (SIMPLIFICADO)
-    drive_file_id: {
+    // Almacenamiento local
+    file_path: {
       type: String,
+      trim: true,
       default: null,
+      comment: 'Ruta local del archivo en el sistema (ej: uploads/submissions/...)',
     },
-    drive_file_url: {
+    file_storage_type: {
       type: String,
-      default: null,
+      enum: ['local'],
+      default: 'local',
+      comment: 'Tipo de almacenamiento (solo local por ahora)',
     },
-    rubric_drive_folder_id: {
+    file_mime_type: {
       type: String,
       default: null,
-    },
-    student_folder_id: {
-      type: String,
-      default: null,
-      comment: 'ID de la carpeta del alumno dentro de la carpeta de la rúbrica (alumno-{nombre})',
+      comment: 'MIME type del archivo (application/pdf, application/zip, etc.)',
     },
 
     // Metadata
@@ -183,6 +184,11 @@ const submissionSchema = new mongoose.Schema(
       general_feedback: {
         type: String,
         default: null,
+      },
+      raw_response: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null,
+        comment: 'Respuesta completa de Gemini sin procesar',
       },
     },
 

@@ -1,12 +1,84 @@
 /**
  * Devolution PDF Service
  * Genera PDFs individuales de devolución para estudiantes con correcciones
+ * Usa el formato excelente de nodeDevolutionService pero con datos de MongoDB
  */
 import PDFDocument from 'pdfkit';
 import Submission from '../models/Submission.js';
 import Commission from '../models/Commission.js';
 import Rubric from '../models/Rubric.js';
 import archiver from 'archiver';
+
+// ===== Parsers basados en nodeDevolutionService.js =====
+const parsearCriterios = (texto) => {
+  if (!texto) return [];
+  let t = String(texto);
+  t = t.replace(/✅/g, '||OK||')
+    .replace(/❌/g, '||ERROR||')
+    .replace(/⚠️/g, '||WARNING||')
+    .replace(/⚠/g, '||WARNING||');
+
+  const partes = t.split('||');
+  const items = [];
+  let estado = null;
+  for (const parte of partes) {
+    if (parte === 'OK') estado = 'ok';
+    else if (parte === 'ERROR') estado = 'error';
+    else if (parte === 'WARNING') estado = 'warning';
+    else if (estado && parte.trim()) {
+      const criterio = parte.trim();
+      const [titulo = criterio, descripcion = ''] = criterio.split('·');
+      items.push({ estado, titulo: titulo.trim(), descripcion: descripcion.trim() });
+    }
+  }
+  return items;
+};
+
+const parsearFortalezas = (texto) => {
+  if (!texto) return [];
+  return texto
+    .replace(/🌟/g, '||STAR||')
+    .split('||STAR||')
+    .map((s) => s.trim())
+    .filter(Boolean);
+};
+
+const parsearRecomendaciones = (texto) => {
+  if (!texto) return [];
+  const t = String(texto);
+  const numeric = t.split(/(\d+)\.\s*/);
+  if (numeric.length > 2) {
+    const out = [];
+    for (let i = 1; i < numeric.length; i += 2) {
+      const rec = numeric[i + 1]?.trim();
+      if (rec) out.push(rec);
+    }
+    if (out.length) return out;
+  }
+  const toolSplit = t
+    .replace(/🛠️/g, '||SEP||')
+    .replace(/🛠/g, '||SEP||')
+    .replace(/🔧/g, '||SEP||')
+    .split('||SEP||')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (toolSplit.length) return toolSplit;
+  return [t.trim()].filter(Boolean);
+};
+
+// ===== PDF helpers =====
+const criteriaColor = (estado) => {
+  switch (estado) {
+    case 'ok':
+      return '#059669';  // Verde
+    case 'error':
+      return '#dc2626';  // Rojo
+    case 'warning':
+      return '#f59e0b';  // Naranja/Amarillo
+    default:
+      return '#34495e';
+  }
+};
 
 class DevolutionPdfService {
   /**
@@ -23,31 +95,141 @@ class DevolutionPdfService {
         throw new Error('La submission no tiene corrección disponible');
       }
 
-      // Crear documento PDF
+      // Crear documento PDF con formato idéntico a nodeDevolutionService
+      const mmToPt = (mm) => mm * 2.834645669;
+
       const doc = new PDFDocument({
         size: 'A4',
-        margins: { top: 50, bottom: 50, left: 50, right: 50 },
+        margins: {
+          top: mmToPt(15),
+          bottom: mmToPt(15),
+          left: mmToPt(15),
+          right: mmToPt(15)
+        },
         info: {
-          Title: `Devolución - ${submission.student_name}`,
-          Author: 'Sistema de Corrección Automática',
-          Subject: 'Devolución de Corrección',
+          Title: `Devolucion - ${submission.student_name}`,
+          Author: 'Corrección Automática',
         },
       });
 
-      // Generar contenido
-      this._generateDevolutionContent(doc, {
-        studentName: submission.student_name,
-        commissionName: commissionName || submission.commission_id,
-        rubricName: rubricName || submission.rubric_id,
-        grade: submission.correction.grade,
-        criteria: submission.correction.criteria || [],
-        strengths: submission.correction.strengths_list || [],
-        recommendations: submission.correction.recommendations_list || [],
-        generalFeedback: submission.correction.general_feedback || '',
-        correctedAt: submission.correction.corrected_at || new Date(),
+      // Función auxiliar para agregar espaciado vertical (en mm)
+      const addSpace = (mm) => doc.moveDown(mm / 5);
+
+      // Símbolos para criterios
+      const getSymbol = (estado) => {
+        switch (estado) {
+          case 'ok': return '[OK]';
+          case 'error': return '[X]';
+          case 'warning': return '[!]';
+          default: return '•';
+        }
+      };
+
+      // Parsear datos de corrección desde MongoDB
+      const nota = submission.correction.grade || '';
+      const criterios = parsearCriterios(submission.correction.summary || '');
+      const fortalezas = parsearFortalezas(submission.correction.strengths || '');
+      const recomendaciones = parsearRecomendaciones(submission.correction.recommendations || '');
+
+      // Título principal
+      doc.fontSize(20).fillColor('#1f2937').font('Helvetica-Bold').text('Devolucion de Correccion', {
+        align: 'center',
+      });
+      addSpace(5);
+
+      // Información del alumno
+      doc.fontSize(12).fillColor('#1f2937').font('Helvetica');
+      doc.text(`Alumno: ${submission.student_name}`, { bold: true });
+
+      // Nota/Puntaje destacado
+      if (nota) {
+        addSpace(2);
+        doc.fontSize(14).fillColor('#059669').font('Helvetica-Bold');
+        doc.text(`Puntaje Total: ${nota}`, { align: 'center' });
+      }
+
+      addSpace(3);
+
+      // Criterios de Evaluación
+      if (criterios.length) {
+        doc.font('Helvetica-Bold').fontSize(16).fillColor('#374151').text('Criterios de Evaluacion');
+        addSpace(2);
+
+        doc.font('Helvetica').fontSize(11);
+        criterios.forEach((c) => {
+          const simbolo = getSymbol(c.estado);
+          const color = criteriaColor(c.estado);
+
+          // Título del criterio con símbolo
+          doc.fillColor(color).text(`${simbolo} ${c.titulo}`, {
+            indent: 15,
+            continued: false,
+          });
+
+          // Descripción (si existe) con indentación adicional
+          if (c.descripcion) {
+            doc.fillColor('#374151').fontSize(11);
+            doc.text(`   ${c.descripcion}`, {
+              indent: 15,
+              continued: false
+            });
+          }
+
+          addSpace(0.8);
+        });
+
+        addSpace(2);
+      }
+
+      // Fortalezas Detectadas
+      if (fortalezas.length) {
+        doc.font('Helvetica-Bold').fontSize(16).fillColor('#374151').text('Fortalezas Detectadas');
+        addSpace(1);
+
+        doc.font('Helvetica').fontSize(11).fillColor('#374151');
+        fortalezas.forEach((f) => {
+          doc.text(`• ${f}`, {
+            indent: 15,
+            continued: false
+          });
+          addSpace(0.5);
+        });
+
+        addSpace(2);
+      }
+
+      // Recomendaciones
+      if (recomendaciones.length) {
+        doc.font('Helvetica-Bold').fontSize(16).fillColor('#374151').text('Recomendaciones');
+        addSpace(1);
+
+        doc.font('Helvetica').fontSize(11).fillColor('#374151');
+        recomendaciones.forEach((rec, idx) => {
+          doc.text(`${idx + 1}. ${rec}`, {
+            indent: 15,
+            continued: false
+          });
+          addSpace(0.5);
+        });
+      }
+
+      // Pie de página con fecha
+      addSpace(2);
+      const fecha = submission.correction.corrected_at
+        ? new Date(submission.correction.corrected_at).toLocaleDateString('es-AR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          })
+        : new Date().toLocaleDateString('es-AR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          });
+      doc.fontSize(9).fillColor('#6b7280').font('Helvetica').text(fecha, {
+        align: 'center'
       });
 
-      // Finalizar documento
       doc.end();
 
       // Convertir a buffer
@@ -89,7 +271,7 @@ class DevolutionPdfService {
         if (commission) commissionName = commission.commission_name;
 
         const rubric = await Rubric.findOne({ rubric_id: rubricId });
-        if (rubric) rubricName = rubric.rubric_name;
+        if (rubric) rubricName = rubric.name;
       } catch (err) {
         console.warn('No se pudieron obtener nombres de comisión/rúbrica:', err.message);
       }
@@ -137,172 +319,11 @@ class DevolutionPdfService {
   }
 
   /**
-   * Genera el contenido del PDF de devolución
-   * @private
-   */
-  static _generateDevolutionContent(doc, data) {
-    const { studentName, commissionName, rubricName, grade, criteria, strengths, recommendations, generalFeedback, correctedAt } = data;
-
-    // --- PORTADA ---
-    doc
-      .fontSize(24)
-      .fillColor('#1f2937')
-      .text('Devolución de Corrección', { align: 'center' })
-      .moveDown(2);
-
-    // Información básica
-    doc
-      .fontSize(14)
-      .fillColor('#4b5563')
-      .text(`Alumno: ${studentName}`, { align: 'left' })
-      .moveDown(0.3)
-      .fontSize(11)
-      .fillColor('#6b7280')
-      .text(`Comisión: ${commissionName}`)
-      .text(`Rúbrica: ${rubricName}`)
-      .moveDown(1);
-
-    // Nota (destacada en verde)
-    if (grade !== null && grade !== undefined) {
-      doc
-        .fontSize(18)
-        .fillColor('#059669')
-        .text(`Puntaje Total: ${grade}`, { align: 'center' })
-        .moveDown(2);
-    } else {
-      doc.moveDown(1);
-    }
-
-    // --- CRITERIOS DE EVALUACIÓN ---
-    if (criteria && criteria.length > 0) {
-      doc
-        .fontSize(16)
-        .fillColor('#1f2937')
-        .text('Criterios de Evaluación', { underline: true })
-        .moveDown(0.5);
-
-      criteria.forEach((criterio) => {
-        // Determinar color según status
-        let color, symbol;
-        switch (criterio.status) {
-          case 'ok':
-            color = '#059669'; // Verde
-            symbol = '✓';
-            break;
-          case 'error':
-            color = '#dc2626'; // Rojo
-            symbol = '✗';
-            break;
-          case 'warning':
-            color = '#f59e0b'; // Amarillo
-            symbol = '⚠';
-            break;
-          default:
-            color = '#4b5563';
-            symbol = '•';
-        }
-
-        // Nombre del criterio con símbolo
-        const criterionTitle = `${symbol} ${criterio.name || 'Criterio'}`;
-        const scoreText =
-          criterio.score !== null && criterio.max_score !== null
-            ? ` (${criterio.score}/${criterio.max_score})`
-            : '';
-
-        doc
-          .fontSize(11)
-          .fillColor(color)
-          .text(criterionTitle + scoreText, { indent: 15 });
-
-        // Feedback del criterio (si existe)
-        if (criterio.feedback) {
-          doc
-            .fontSize(10)
-            .fillColor('#6b7280')
-            .text(criterio.feedback, { indent: 30 })
-            .moveDown(0.3);
-        } else {
-          doc.moveDown(0.3);
-        }
-      });
-
-      doc.moveDown(1);
-    }
-
-    // --- FORTALEZAS DETECTADAS ---
-    if (strengths && strengths.length > 0) {
-      doc
-        .fontSize(16)
-        .fillColor('#1f2937')
-        .text('Fortalezas Detectadas', { underline: true })
-        .moveDown(0.5);
-
-      strengths.forEach((strength) => {
-        doc
-          .fontSize(11)
-          .fillColor('#374151')
-          .text(`• ${strength}`, { indent: 15 })
-          .moveDown(0.3);
-      });
-
-      doc.moveDown(1);
-    }
-
-    // --- RECOMENDACIONES ---
-    if (recommendations && recommendations.length > 0) {
-      doc
-        .fontSize(16)
-        .fillColor('#1f2937')
-        .text('Recomendaciones', { underline: true })
-        .moveDown(0.5);
-
-      recommendations.forEach((recommendation, idx) => {
-        doc
-          .fontSize(11)
-          .fillColor('#374151')
-          .text(`${idx + 1}. ${recommendation}`, { indent: 15 })
-          .moveDown(0.3);
-      });
-
-      doc.moveDown(1);
-    }
-
-    // --- FEEDBACK GENERAL ---
-    if (generalFeedback) {
-      doc
-        .fontSize(16)
-        .fillColor('#1f2937')
-        .text('Comentarios Generales', { underline: true })
-        .moveDown(0.5);
-
-      doc
-        .fontSize(11)
-        .fillColor('#374151')
-        .text(generalFeedback, { align: 'left' })
-        .moveDown(2);
-    }
-
-    // --- PIE DE PÁGINA ---
-    doc
-      .fontSize(9)
-      .fillColor('#9ca3af')
-      .text(`Fecha de corrección: ${correctedAt.toLocaleDateString('es-AR')}`, { align: 'center' })
-      .moveDown(0.3)
-      .text('Sistema de Corrección Automática', { align: 'center' });
-  }
-
-  /**
    * Sanitiza el nombre del archivo removiendo caracteres especiales
    * @private
    */
   static _sanitizeFileName(name) {
-    return name
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // Remover acentos
-      .replace(/[^a-z0-9-_]/g, '_') // Reemplazar caracteres especiales
-      .replace(/_{2,}/g, '_') // Remover underscores consecutivos
-      .replace(/^_|_$/g, ''); // Remover underscores al inicio/fin
+    return String(name).trim().replace(/[^a-zA-Z0-9-_]+/g, '_') || 'alumno';
   }
 
   /**

@@ -43,7 +43,6 @@ export const UserView = () => {
   // Estado para corrección automática masiva
   const [isBatchGrading, setIsBatchGrading] = useState(false);
   const [batchGradingResult, setBatchGradingResult] = useState('');
-  const [batchGradingDriveLink, setBatchGradingDriveLink] = useState('');
   const [batchGradingError, setBatchGradingError] = useState('');
 
   // Archivo a corregir (para corrección manual)
@@ -441,7 +440,6 @@ export const UserView = () => {
       setIsBatchGrading(true);
       setBatchGradingError('');
       setBatchGradingResult('');
-      setBatchGradingDriveLink('');
 
       // Obtener la rúbrica seleccionada
       const rubric = rubrics.find((r) => r._id === selectedRubricId);
@@ -449,44 +447,59 @@ export const UserView = () => {
         throw new Error('Rúbrica no encontrada');
       }
 
-      // Verificar que la rúbrica tiene spreadsheet_id y drive_folder_id
-      if (!rubric.spreadsheet_file_id) {
-        throw new Error('La rúbrica no tiene un archivo de entregas configurado. Por favor, recrea la rúbrica.');
+      // Verificar que la rúbrica tenga rubric_json
+      if (!rubric.rubric_json) {
+        throw new Error('La rúbrica no tiene configuración válida. Por favor, recrea la rúbrica.');
       }
 
-      if (!rubric.drive_folder_id) {
-        throw new Error('La rúbrica no tiene una carpeta configurada. Por favor, recrea la rúbrica.');
+      // Obtener token de autenticación
+      const authToken = localStorage.getItem('token');
+      if (!authToken) {
+        throw new Error('No se encontró token de autenticación. Por favor, inicia sesión nuevamente.');
       }
 
-      // Llamar al webhook de corrección masiva
-      const webhookUrl =
-        import.meta.env.VITE_BATCH_GRADING_WEBHOOK_URL ||
-        'https://tu-servidor.n8n.example/webhook/batch-grading';
+      // Llamar al nuevo endpoint del backend (que maneja el batch internamente)
+      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-      const response = await axios.post(webhookUrl, {
-        university_id: selectedUniversityId,
-        faculty_id: selectedFacultyId,
-        career_id: selectedCareerId,
-        course_id: selectedCourseId,
-        commission_id: selectedCommissionId,
-        rubric_id: rubric.rubric_id, // Enviar el rubric_id del modelo (no el _id de MongoDB)
-        rubric_json: rubric.rubric_json,
-        gemini_api_key: userProfile.gemini_api_key, // Enviar API key del usuario
-        spreadsheet_id: rubric.spreadsheet_file_id, // ID del archivo entregas.xlsx
-        rubric_folder_id: rubric.drive_folder_id, // ID de la carpeta de la rúbrica en Drive
-      });
+      const response = await axios.post(
+        `${backendUrl}/api/submissions/correct-batch`,
+        {
+          commission_id: selectedCommissionId,
+          rubric_id: rubric.rubric_id, // Enviar el rubric_id del modelo (no el _id de MongoDB)
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 600000, // 10 minutos timeout (puede tardar con muchas submissions)
+        }
+      );
 
-      // Extraer resultado (esperamos { drive_link: "...", alumnos_corregidos: 2 })
-      const { drive_link, alumnos_corregidos } = response.data;
-      
+      // Extraer resultado del backend
+      const { data } = response.data;
+      const { corrected = 0, failed = 0, errors = [] } = data || {};
+
       // Construir mensaje de éxito
-      const resultMessage = `✅ Se corrigieron exitosamente ${alumnos_corregidos} estudiante${alumnos_corregidos !== 1 ? 's' : ''}.`;
-      
-      setBatchGradingResult(resultMessage);
-      
-      if (drive_link) {
-        setBatchGradingDriveLink(drive_link);
+      let resultMessage = `✅ Se corrigieron exitosamente ${corrected} estudiante${corrected !== 1 ? 's' : ''}.`;
+
+      if (failed > 0) {
+        resultMessage += `\n⚠️ ${failed} submission${failed !== 1 ? 's' : ''} fallaron.`;
+
+        // Mostrar detalles de errores (máximo 5)
+        if (errors.length > 0) {
+          const errorDetails = errors.slice(0, 5).map((err: any) =>
+            `- ${err.student_name}: ${err.error}`
+          ).join('\n');
+          resultMessage += `\n\nDetalles:\n${errorDetails}`;
+
+          if (errors.length > 5) {
+            resultMessage += `\n... y ${errors.length - 5} error(es) más.`;
+          }
+        }
       }
+
+      setBatchGradingResult(resultMessage);
     } catch (err: unknown) {
       setBatchGradingError(
         err && typeof err === 'object' && 'message' in err
@@ -718,17 +731,7 @@ export const UserView = () => {
 
             {batchGradingResult && (
               <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm text-emerald-400 shadow-inner">
-                <strong className="block mb-2">{batchGradingResult}</strong>
-                {batchGradingDriveLink && (
-                  <a 
-                    href={batchGradingDriveLink} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-emerald-300 hover:text-emerald-200 underline"
-                  >
-                    🔗 Link de google drive
-                  </a>
-                )}
+                <strong className="block">{batchGradingResult}</strong>
               </div>
             )}
 

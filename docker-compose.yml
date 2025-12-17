@@ -4,7 +4,9 @@ version: '3.8'
 # Sistema de Corrección Automática
 # ============================================
 # Stack completo: Backend + Frontend + N8N
-# Base de datos: MongoDB Atlas (en la nube)
+# Base de datos: MongoDB Atlas (fuente de verdad única)
+# Almacenamiento: Filesystem local (backend/uploads/)
+# N8N: Solo para corrección automática con Gemini AI
 
 services:
   # ==========================================
@@ -34,20 +36,23 @@ services:
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
 
       # N8N Webhooks (URLs internas entre containers)
+      # Solo webhooks necesarios para corrección con Gemini AI
       N8N_RUBRIC_WEBHOOK_URL: http://n8n:5678/webhook/rubrica
-      N8N_GRADING_WEBHOOK_URL: http://n8n:5678/webhook/corregir
-      N8N_SPREADSHEET_WEBHOOK_URL: http://n8n:5678/webhook/spreadsheet
-      N8N_BATCH_GRADING_WEBHOOK_URL: http://n8n:5678/webhook/automatico
-      N8N_WEBHOOK_GET_CORRECTIONS: http://n8n:5678/webhook/get-student-corrections
 
-      # N8N Webhooks - Creación de carpetas
-      SEED_CREATE_DRIVE_FOLDERS: "true"
-      N8N_CREATE_UNIVERSITY_FOLDER_WEBHOOK: http://n8n:5678/webhook/create-university-folder
-      N8N_CREATE_FACULTY_FOLDER_WEBHOOK: http://n8n:5678/webhook/create-faculty-folder
-      N8N_CREATE_CAREER_FOLDER_WEBHOOK: http://n8n:5678/webhook/create-career-folder
-      N8N_CREATE_COURSE_FOLDER_WEBHOOK: http://n8n:5678/webhook/create-course-folder
-      N8N_CREATE_COMMISSION_FOLDER_WEBHOOK: http://n8n:5678/webhook/create-commission-folder
-      N8N_CREATE_SUBMISSION_FOLDER_WEBHOOK: http://n8n:5678/webhook/create-submission-folder
+      # Webhook para corrección individual (NUEVO - usado por batch)
+      N8N_INDIVIDUAL_GRADING_WEBHOOK_URL: http://n8n:5678/webhook/corregir-individual
+
+      # URL del backend (usado por n8n para descargar archivos)
+      BACKEND_URL: http://backend:80
+
+      # DEPRECADO: Webhooks antiguos (ya no se usan)
+      # N8N_GRADING_WEBHOOK_URL: http://n8n:5678/webhook/corregir
+      # N8N_BATCH_GRADING_WEBHOOK_URL: http://n8n:5678/webhook/automatico-mongodb
+
+      # Almacenamiento de archivos (local filesystem)
+      FILE_STORAGE_TYPE: ${FILE_STORAGE_TYPE:-local}
+      UPLOAD_MAX_SIZE: ${UPLOAD_MAX_SIZE:-50000000}
+      UPLOAD_PATH: ${UPLOAD_PATH:-./uploads}
 
       # CORS
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
@@ -59,6 +64,7 @@ services:
     volumes:
       - ./backend:/app
       - /app/node_modules
+      - backend_uploads:/app/uploads
 
     networks:
       - correcion-network
@@ -81,9 +87,10 @@ services:
         # Variables de entorno para build de Vite
         VITE_API_URL: http://localhost:${BACKEND_PORT:-5000}
         VITE_RUBRIC_WEBHOOK_URL: http://localhost:${N8N_PORT:-5678}/webhook/rubrica
-        VITE_GRADING_WEBHOOK_URL: http://localhost:${N8N_PORT:-5678}/webhook/corregir
-        VITE_SPREADSHEET_WEBHOOK_URL: http://localhost:${N8N_PORT:-5678}/webhook/spreadsheet
-        VITE_BATCH_GRADING_WEBHOOK_URL: http://localhost:${N8N_PORT:-5678}/webhook/automatico
+
+        # NOTA: Ya no se necesita VITE_BATCH_GRADING_WEBHOOK_URL
+        # El frontend ahora llama al backend (POST /api/submissions/correct-batch)
+        # y el backend internamente llama a n8n
     container_name: correcion-frontend
     restart: unless-stopped
     ports:
@@ -176,3 +183,7 @@ volumes:
   n8n_data:
     driver: local
     name: correcion_n8n_data
+
+  backend_uploads:
+    driver: local
+    name: correcion_backend_uploads

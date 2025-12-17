@@ -5,11 +5,13 @@
 import Submission from '../models/Submission.js';
 import Commission from '../models/Commission.js';
 import Rubric from '../models/Rubric.js';
-import { uploadFileToDrive } from '../services/driveService.js';
+import User from '../models/User.js';
+import * as fileStorageService from '../services/fileStorageService.js';
 import ConsolidatorService from '../services/consolidatorService.js';
 import fs from 'fs/promises';
 import fsSync from 'fs';
 import path from 'path';
+import axios from 'axios';
 
 /**
  * Obtener todas las submissions con filtros multi-tenant
@@ -197,7 +199,7 @@ export const createSubmission = async (req, res) => {
 
     tempFilePath = uploadedFile.path;
 
-    // Buscar rúbrica para obtener drive_folder_id y jerarquía
+    // Buscar rúbrica para obtener jerarquía
     console.log(`🔍 Buscando rúbrica con rubric_id: "${rubric_id}"`);
     const rubric = await Rubric.findOne({ rubric_id, deleted: false });
 
@@ -211,25 +213,6 @@ export const createSubmission = async (req, res) => {
     }
 
     console.log(`✅ Rúbrica encontrada: ${rubric.name}`);
-    console.log(`   - _id: ${rubric._id}`);
-    console.log(`   - rubric_id: ${rubric.rubric_id}`);
-    console.log(`   - drive_folder_id: "${rubric.drive_folder_id}"`);
-    console.log(`   - drive_folder_id type: ${typeof rubric.drive_folder_id}`);
-    console.log(`   - drive_folder_id length: ${rubric.drive_folder_id ? rubric.drive_folder_id.length : 0}`);
-    console.log(`   - drive_folder_id truthiness: ${!!rubric.drive_folder_id}`);
-    console.log(`   - drive_folder_id trimmed: "${rubric.drive_folder_id ? rubric.drive_folder_id.trim() : ''}"`);
-
-    // Validar drive_folder_id con trim
-    const driveFolderId = typeof rubric.drive_folder_id === 'string' ? rubric.drive_folder_id.trim() : rubric.drive_folder_id;
-
-    if (!driveFolderId) {
-      await fs.unlink(tempFilePath);
-      console.error(`❌ La rúbrica ${rubric.name} no tiene drive_folder_id configurado`);
-      return res.status(400).json({
-        success: false,
-        message: 'La rúbrica no tiene carpeta de Drive configurada',
-      });
-    }
 
     // Validar que commission_id coincida
     if (rubric.commission_id !== commission_id) {
@@ -343,28 +326,24 @@ export const createSubmission = async (req, res) => {
     // Obtener tamaño del archivo final
     const finalFileStats = await fs.stat(finalTxtPath);
 
-    // 1. Crear carpeta del alumno en Drive
-    console.log(`📁 Creando carpeta para alumno: ${cleanStudentName}`);
-    const { createStudentFolder } = await import('../services/driveService.js');
+    // Guardar archivo localmente
+    console.log(`💾 Guardando archivo localmente para ${cleanStudentName}...`);
 
-    const studentFolderResponse = await createStudentFolder(cleanStudentName, driveFolderId);
+    // Preparar datos del archivo para storage
+    const fileToStore = {
+      path: finalTxtPath,
+      originalname: 'entrega.txt',
+      mimetype: 'text/plain',
+      size: finalFileStats.size,
+    };
 
-    if (!studentFolderResponse.success) {
-      throw new Error(`No se pudo crear carpeta del alumno: ${studentFolderResponse.message}`);
-    }
+    const storageResult = await fileStorageService.saveSubmissionFile(fileToStore, {
+      commission_id: rubric.commission_id,
+      rubric_id: rubric.rubric_id,
+      student_name: cleanStudentName,
+    });
 
-    console.log(`✅ Carpeta del alumno creada: ${studentFolderResponse.folder_id}`);
-
-    // 2. Subir archivo como "entrega.txt" dentro de la carpeta del alumno
-    const driveFileName = 'entrega.txt';
-    console.log(`📤 Subiendo archivo a Drive: ${driveFileName}`);
-    console.log(`   - Carpeta del alumno: "${studentFolderResponse.folder_id}"`);
-
-    const driveResponse = await uploadFileToDrive(
-      finalTxtPath,
-      driveFileName,
-      studentFolderResponse.folder_id
-    );
+    console.log(`✅ Archivo guardado: ${storageResult.file_path}`);
 
     // Generar submission_id
     const submission_id = Submission.generateSubmissionId(commission_id, cleanStudentName);
@@ -380,13 +359,12 @@ export const createSubmission = async (req, res) => {
       university_id: rubric.university_id,
       student_name: cleanStudentName,
       student_id: student_id || null,
-      file_name: driveFileName,
+      file_name: 'entrega.txt',
       file_size: finalFileStats.size,
       file_content_preview: fileContentPreview,
-      drive_file_id: driveResponse.drive_file_id,
-      drive_file_url: driveResponse.drive_file_url,
-      rubric_drive_folder_id: driveFolderId,
-      student_folder_id: studentFolderResponse.folder_id,
+      file_path: storageResult.file_path,
+      file_storage_type: storageResult.storage_type,
+      file_mime_type: storageResult.mime_type,
       uploaded_by: req.user.userId,
       status: 'uploaded',
     });
@@ -507,6 +485,77 @@ export const updateSubmission = async (req, res) => {
 };
 
 /**
+ * Descargar archivo original de submission
+ * GET /api/submissions/:id/file
+ */
+export const downloadSubmissionFile = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const submission = await Submission.findById(id);
+
+    if (!submission || submission.deleted) {
+      return res.status(404).json({
+        success: false,
+        message: 'Submission no encontrada',
+      });
+    }
+
+    // Validar acceso
+    if (req.user.role === 'professor') {
+      const commission = await Commission.findOne({
+        commission_id: submission.commission_id,
+        professors: req.user.userId,
+        deleted: false,
+      });
+
+      if (!commission) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tiene acceso a esta submission',
+        });
+      }
+    } else if (req.user.role === 'university-admin') {
+      if (submission.university_id !== req.user.university_id) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tiene acceso a esta submission',
+        });
+      }
+    }
+
+    // Verificar que tenga archivo
+    if (!submission.file_path) {
+      return res.status(404).json({
+        success: false,
+        message: 'Esta submission no tiene archivo asociado',
+      });
+    }
+
+    // Obtener archivo desde fileStorageService
+    const { getSubmissionFile } = await import('../services/fileStorageService.js');
+    const fileBuffer = await getSubmissionFile(submission.file_path);
+
+    // Configurar headers para descarga
+    res.setHeader('Content-Type', submission.file_mime_type || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename="${submission.file_name}"`);
+    res.setHeader('Content-Length', fileBuffer.length);
+
+    // Enviar archivo
+    res.send(fileBuffer);
+
+    console.log(`✅ Archivo descargado: ${submission.file_name} (${submission.student_name})`);
+  } catch (error) {
+    console.error('Error al descargar archivo de submission:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al descargar archivo',
+      error: error.message,
+    });
+  }
+};
+
+/**
  * Eliminar submission (soft delete)
  * DELETE /api/submissions/:id
  */
@@ -621,24 +670,6 @@ export const createBatchSubmissions = async (req, res) => {
     }
 
     console.log(`✅ Rúbrica encontrada: ${rubric.name}`);
-    console.log(`   - _id: ${rubric._id}`);
-    console.log(`   - rubric_id: ${rubric.rubric_id}`);
-    console.log(`   - drive_folder_id: "${rubric.drive_folder_id}"`);
-    console.log(`   - drive_folder_id type: ${typeof rubric.drive_folder_id}`);
-    console.log(`   - drive_folder_id length: ${rubric.drive_folder_id ? rubric.drive_folder_id.length : 0}`);
-    console.log(`   - drive_folder_id truthiness: ${!!rubric.drive_folder_id}`);
-    console.log(`   - drive_folder_id trimmed: "${rubric.drive_folder_id ? rubric.drive_folder_id.trim() : ''}"`);
-
-    // Validar drive_folder_id con trim
-    const driveFolderId = typeof rubric.drive_folder_id === 'string' ? rubric.drive_folder_id.trim() : rubric.drive_folder_id;
-
-    if (!driveFolderId) {
-      await fs.unlink(tempZipPath);
-      return res.status(400).json({
-        success: false,
-        message: 'La rúbrica no tiene carpeta de Drive configurada',
-      });
-    }
 
     // Validar que commission_id coincida
     if (rubric.commission_id !== commission_id) {
@@ -748,31 +779,24 @@ export const createBatchSubmissions = async (req, res) => {
         const fileContentPreview = fileContent.substring(0, 500);
         const fileStats = await fs.stat(txtPath);
 
-        // 1. Crear carpeta del alumno en Drive
-        console.log(`📁 Creando carpeta para alumno: ${cleanStudentName}`);
-        const { createStudentFolder } = await import('../services/driveService.js');
+        // Guardar archivo localmente
+        console.log(`💾 Guardando archivo localmente para ${cleanStudentName}...`);
 
-        const studentFolderResponse = await createStudentFolder(cleanStudentName, driveFolderId);
+        // Preparar datos del archivo para storage
+        const fileToStore = {
+          path: txtPath,
+          originalname: 'entrega.txt',
+          mimetype: 'text/plain',
+          size: fileStats.size,
+        };
 
-        if (!studentFolderResponse.success) {
-          errorResults.push({
-            studentName: result.student_name,
-            error: `No se pudo crear carpeta del alumno: ${studentFolderResponse.message}`,
-          });
-          continue;
-        }
+        const storageResult = await fileStorageService.saveSubmissionFile(fileToStore, {
+          commission_id: rubric.commission_id,
+          rubric_id: rubric.rubric_id,
+          student_name: cleanStudentName,
+        });
 
-        console.log(`✅ Carpeta del alumno creada: ${studentFolderResponse.folder_id}`);
-
-        // 2. Subir TXT consolidado a Drive como "entrega.txt"
-        const driveFileName = 'entrega.txt';
-        console.log(`📤 Subiendo ${driveFileName} a Drive...`);
-
-        const driveResponse = await uploadFileToDrive(
-          txtPath,
-          driveFileName,
-          studentFolderResponse.folder_id
-        );
+        console.log(`✅ Archivo guardado: ${storageResult.file_path}`);
 
         // Crear Submission
         const submission_id = Submission.generateSubmissionId(commission_id, cleanStudentName);
@@ -787,13 +811,12 @@ export const createBatchSubmissions = async (req, res) => {
           university_id: rubric.university_id,
           student_name: cleanStudentName,
           student_id: null,
-          file_name: driveFileName,
+          file_name: 'entrega.txt',
           file_size: fileStats.size,
           file_content_preview: fileContentPreview,
-          drive_file_id: driveResponse.drive_file_id,
-          drive_file_url: driveResponse.drive_file_url,
-          rubric_drive_folder_id: driveFolderId,
-          student_folder_id: studentFolderResponse.folder_id,
+          file_path: storageResult.file_path,
+          file_storage_type: storageResult.storage_type,
+          file_mime_type: storageResult.mime_type,
           uploaded_by: req.user.userId,
           status: 'uploaded',
         });
@@ -861,5 +884,368 @@ export const createBatchSubmissions = async (req, res) => {
     } catch (cleanupError) {
       console.error('⚠️ Error al limpiar archivos temporales:', cleanupError);
     }
+  }
+};
+
+/**
+ * Corregir múltiples submissions en batch (llama a n8n individualmente por cada una)
+ * POST /api/submissions/correct-batch
+ * Body: { commission_id, rubric_id }
+ */
+export const correctBatchSubmissions = async (req, res) => {
+  try {
+    const { commission_id, rubric_id } = req.body;
+
+    // Validaciones
+    if (!commission_id || !rubric_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Faltan campos requeridos: commission_id, rubric_id',
+      });
+    }
+
+    // Obtener rúbrica
+    const rubric = await Rubric.findOne({ rubric_id, deleted: false });
+
+    if (!rubric) {
+      return res.status(404).json({
+        success: false,
+        message: 'Rúbrica no encontrada',
+      });
+    }
+
+    // Validar que la rúbrica pertenezca a la comisión
+    if (rubric.commission_id !== commission_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'La rúbrica no pertenece a la comisión especificada',
+      });
+    }
+
+    // Validar acceso del profesor a la comisión
+    if (req.user.role === 'professor') {
+      const commission = await Commission.findOne({
+        commission_id,
+        professors: req.user.userId,
+        deleted: false,
+      });
+
+      if (!commission) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tiene acceso a esta comisión',
+        });
+      }
+    } else if (req.user.role === 'university-admin') {
+      if (rubric.university_id !== req.user.university_id) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tiene acceso a esta rúbrica',
+        });
+      }
+    }
+
+    // Obtener API key del usuario
+    const user = await User.findById(req.user.userId).select('+gemini_api_key_encrypted');
+
+    if (!user || !user.hasValidGeminiApiKey()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Debes configurar tu API Key de Gemini en tu perfil antes de poder corregir.',
+      });
+    }
+
+    const geminiApiKey = user.getGeminiApiKey();
+
+    if (!geminiApiKey) {
+      return res.status(500).json({
+        success: false,
+        message: 'Error al obtener la API key. Intenta reconfigurarla en tu perfil.',
+      });
+    }
+
+    // Obtener todas las submissions pendientes de corregir
+    // Incluye: 'uploaded' (nuevas) y 'failed' (que fallaron anteriormente)
+    const submissions = await Submission.find({
+      commission_id,
+      rubric_id,
+      status: { $in: ['uploaded', 'failed'] },
+      deleted: false,
+    });
+
+    if (submissions.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: 'No hay submissions pendientes para corregir',
+        data: {
+          total: 0,
+          corrected: 0,
+          failed: 0,
+          errors: [],
+        },
+      });
+    }
+
+    console.log(`🔄 Iniciando corrección batch de ${submissions.length} submissions...`);
+
+    // Configuración de n8n webhook
+    const n8nWebhookUrl =
+      process.env.N8N_INDIVIDUAL_GRADING_WEBHOOK_URL ||
+      'http://localhost:5678/webhook/corregir-individual';
+
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000';
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+
+    // Contadores
+    let corrected = 0;
+    let failed = 0;
+    const errors = [];
+
+    // Procesar cada submission
+    for (const submission of submissions) {
+      try {
+        console.log(`📝 Corrigiendo submission: ${submission.student_name}`);
+
+        // Cambiar status a 'pending-correction'
+        await submission.updateStatus('pending-correction');
+
+        // Llamar a n8n con el flujo individual
+        const response = await axios.post(
+          n8nWebhookUrl,
+          {
+            submission_id: submission._id.toString(),
+            rubric_json: rubric.rubric_json,
+            gemini_api_key: geminiApiKey,
+            backend_url: backendUrl,
+            auth_token: authToken,
+          },
+          {
+            timeout: 120000, // 2 minutos por submission
+          }
+        );
+
+        // Verificar respuesta
+        const result = response.data;
+
+        if (!result.success) {
+          throw new Error(result.error || 'Error desconocido en la corrección');
+        }
+
+        // Guardar corrección en MongoDB
+        await submission.addCorrection({
+          grade: result.grade,
+          summary: result.summary,
+          strengths: result.strengths,
+          recommendations: result.recommendations,
+          result_json: result.result_json,
+          corrected_by: req.user.userId,
+        });
+
+        // Cambiar status a 'corrected'
+        await submission.updateStatus('corrected');
+
+        corrected++;
+        console.log(`✅ Submission corregida: ${submission.student_name} (${result.grade}/100)`);
+      } catch (error) {
+        failed++;
+        const errorMessage = error.response?.data?.error || error.message;
+
+        errors.push({
+          submission_id: submission._id,
+          student_name: submission.student_name,
+          error: errorMessage,
+        });
+
+        // Cambiar status a 'failed'
+        await submission.updateStatus('failed');
+
+        console.error(`❌ Error al corregir ${submission.student_name}:`, errorMessage);
+      }
+    }
+
+    console.log(
+      `\n📊 Corrección batch completada: ${corrected} exitosos, ${failed} fallidos`
+    );
+
+    res.status(200).json({
+      success: true,
+      message: `Corrección batch completada: ${corrected} exitosos, ${failed} fallidos`,
+      data: {
+        total: submissions.length,
+        corrected,
+        failed,
+        errors,
+      },
+    });
+  } catch (error) {
+    console.error('Error en corrección batch:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al corregir submissions en batch',
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Corregir una submission individual
+ * POST /api/submissions/:id/correct
+ */
+export const correctIndividualSubmission = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    console.log(`🔄 Corrigiendo submission individual: ${id}`);
+
+    // Buscar submission
+    let submission;
+    if (/^[0-9a-fA-F]{24}$/.test(id)) {
+      submission = await Submission.findById(id);
+    }
+    if (!submission) {
+      submission = await Submission.findOne({ submission_id: id, deleted: false });
+    }
+
+    if (!submission || submission.deleted) {
+      return res.status(404).json({
+        success: false,
+        message: 'Submission no encontrada',
+      });
+    }
+
+    // Obtener rúbrica
+    const rubric = await Rubric.findOne({ rubric_id: submission.rubric_id, deleted: false });
+
+    if (!rubric) {
+      return res.status(404).json({
+        success: false,
+        message: 'Rúbrica no encontrada',
+      });
+    }
+
+    // Validar acceso del profesor
+    if (req.user.role === 'professor') {
+      const commission = await Commission.findOne({
+        commission_id: submission.commission_id,
+        professors: req.user.userId,
+        deleted: false,
+      });
+
+      if (!commission) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tiene acceso a esta comisión',
+        });
+      }
+    } else if (req.user.role === 'university-admin') {
+      if (rubric.university_id !== req.user.university_id) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tiene acceso a esta rúbrica',
+        });
+      }
+    }
+
+    // Obtener API key del usuario
+    const user = await User.findById(req.user.userId).select('+gemini_api_key_encrypted');
+
+    if (!user || !user.hasValidGeminiApiKey()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Debes configurar tu API Key de Gemini en tu perfil antes de poder corregir.',
+      });
+    }
+
+    const geminiApiKey = user.getGeminiApiKey();
+
+    if (!geminiApiKey) {
+      return res.status(500).json({
+        success: false,
+        message: 'Error al obtener la API key. Intenta reconfigurarla en tu perfil.',
+      });
+    }
+
+    // Configuración de n8n webhook
+    const n8nWebhookUrl =
+      process.env.N8N_INDIVIDUAL_GRADING_WEBHOOK_URL ||
+      'http://localhost:5678/webhook/corregir-individual';
+
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000';
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+
+    console.log(`📝 Llamando a n8n para corregir: ${submission.student_name}`);
+
+    // Cambiar status a 'pending-correction'
+    await submission.updateStatus('pending-correction');
+
+    try {
+      // Llamar a n8n con el flujo individual
+      const response = await axios.post(
+        n8nWebhookUrl,
+        {
+          submission_id: submission._id.toString(),
+          rubric_json: rubric.rubric_json,
+          gemini_api_key: geminiApiKey,
+          backend_url: backendUrl,
+          auth_token: authToken,
+        },
+        {
+          timeout: 120000, // 2 minutos
+        }
+      );
+
+      // Verificar respuesta
+      const result = response.data;
+
+      if (!result.success) {
+        throw new Error(result.error || 'Error desconocido en la corrección');
+      }
+
+      // Guardar corrección en MongoDB
+      await submission.addCorrection({
+        grade: result.grade,
+        summary: result.summary,
+        strengths: result.strengths,
+        recommendations: result.recommendations,
+        result_json: result.result_json,
+        corrected_by: req.user.userId,
+      });
+
+      // Cambiar status a 'corrected'
+      await submission.updateStatus('corrected');
+
+      console.log(`✅ Submission corregida: ${submission.student_name} (${result.grade}/100)`);
+
+      res.status(200).json({
+        success: true,
+        message: 'Submission corregida exitosamente',
+        data: {
+          submission_id: submission._id,
+          student_name: submission.student_name,
+          grade: result.grade,
+          status: 'corrected',
+        },
+      });
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || error.message;
+
+      // Cambiar status a 'failed'
+      await submission.updateStatus('failed');
+
+      console.error(`❌ Error al corregir ${submission.student_name}:`, errorMessage);
+
+      return res.status(500).json({
+        success: false,
+        message: 'Error al corregir la submission',
+        error: errorMessage,
+      });
+    }
+  } catch (error) {
+    console.error('Error en corrección individual:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al corregir la submission',
+      error: error.message,
+    });
   }
 };
