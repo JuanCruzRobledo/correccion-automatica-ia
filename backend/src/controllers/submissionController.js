@@ -319,36 +319,29 @@ export const createSubmission = async (req, res) => {
       }
     }
 
-    // Leer preview del archivo (primeros 500 caracteres)
+    // Leer contenido del archivo completo
     const fileContent = await fs.readFile(finalTxtPath, 'utf-8');
     const fileContentPreview = fileContent.substring(0, 500);
 
     // Obtener tamaño del archivo final
     const finalFileStats = await fs.stat(finalTxtPath);
 
-    // Guardar archivo localmente
-    console.log(`💾 Guardando archivo localmente para ${cleanStudentName}...`);
+    // Preparar archivo para MongoDB (no se guarda en filesystem)
+    console.log(`💾 Preparando archivo para MongoDB para ${cleanStudentName}...`);
 
-    // Preparar datos del archivo para storage
-    const fileToStore = {
-      path: finalTxtPath,
-      originalname: 'entrega.txt',
-      mimetype: 'text/plain',
-      size: finalFileStats.size,
+    const storageResult = {
+      file_content: fileContent,
+      storage_type: 'mongodb',
+      mime_type: 'text/plain',
+      content_length: fileContent.length,
     };
 
-    const storageResult = await fileStorageService.saveSubmissionFile(fileToStore, {
-      commission_id: rubric.commission_id,
-      rubric_id: rubric.rubric_id,
-      student_name: cleanStudentName,
-    });
-
-    console.log(`✅ Archivo guardado: ${storageResult.file_path}`);
+    console.log(`✅ Archivo preparado: ${storageResult.content_length} bytes`);
 
     // Generar submission_id
     const submission_id = Submission.generateSubmissionId(commission_id, cleanStudentName);
 
-    // Crear submission en BD
+    // Crear submission en BD con contenido en MongoDB
     const newSubmission = new Submission({
       submission_id,
       commission_id: rubric.commission_id,
@@ -362,7 +355,8 @@ export const createSubmission = async (req, res) => {
       file_name: 'entrega.txt',
       file_size: finalFileStats.size,
       file_content_preview: fileContentPreview,
-      file_path: storageResult.file_path,
+      file_content: storageResult.file_content,
+      file_content_length: storageResult.content_length,
       file_storage_type: storageResult.storage_type,
       file_mime_type: storageResult.mime_type,
       uploaded_by: req.user.userId,
@@ -524,17 +518,27 @@ export const downloadSubmissionFile = async (req, res) => {
       }
     }
 
-    // Verificar que tenga archivo
-    if (!submission.file_path) {
+    // Verificar que tenga contenido del archivo
+    if (!submission.file_content && !submission.file_path) {
       return res.status(404).json({
         success: false,
         message: 'Esta submission no tiene archivo asociado',
       });
     }
 
-    // Obtener archivo desde fileStorageService
-    const { getSubmissionFile } = await import('../services/fileStorageService.js');
-    const fileBuffer = await getSubmissionFile(submission.file_path);
+    // Obtener contenido del archivo
+    let fileBuffer;
+
+    if (submission.file_content) {
+      // NUEVO: Leer desde MongoDB
+      console.log(`📖 Leyendo archivo desde MongoDB: ${submission.file_name}`);
+      fileBuffer = Buffer.from(submission.file_content, 'utf-8');
+    } else if (submission.file_path) {
+      // LEGACY: Para submissions antiguas con file_path
+      console.log(`📖 Leyendo archivo desde filesystem (legacy): ${submission.file_path}`);
+      const { getSubmissionFile } = await import('../services/fileStorageService.js');
+      fileBuffer = await getSubmissionFile(submission.file_path);
+    }
 
     // Configurar headers para descarga
     res.setHeader('Content-Type', submission.file_mime_type || 'application/octet-stream');
@@ -774,31 +778,24 @@ export const createBatchSubmissions = async (req, res) => {
           continue;
         }
 
-        // Leer preview y stats del archivo
+        // Leer contenido y stats del archivo
         const fileContent = await fs.readFile(txtPath, 'utf-8');
         const fileContentPreview = fileContent.substring(0, 500);
         const fileStats = await fs.stat(txtPath);
 
-        // Guardar archivo localmente
-        console.log(`💾 Guardando archivo localmente para ${cleanStudentName}...`);
+        // Preparar archivo para MongoDB (no se guarda en filesystem)
+        console.log(`💾 Preparando archivo para MongoDB para ${cleanStudentName}...`);
 
-        // Preparar datos del archivo para storage
-        const fileToStore = {
-          path: txtPath,
-          originalname: 'entrega.txt',
-          mimetype: 'text/plain',
-          size: fileStats.size,
+        const storageResult = {
+          file_content: fileContent,
+          storage_type: 'mongodb',
+          mime_type: 'text/plain',
+          content_length: fileContent.length,
         };
 
-        const storageResult = await fileStorageService.saveSubmissionFile(fileToStore, {
-          commission_id: rubric.commission_id,
-          rubric_id: rubric.rubric_id,
-          student_name: cleanStudentName,
-        });
+        console.log(`✅ Archivo preparado: ${storageResult.content_length} bytes`);
 
-        console.log(`✅ Archivo guardado: ${storageResult.file_path}`);
-
-        // Crear Submission
+        // Crear Submission con contenido en MongoDB
         const submission_id = Submission.generateSubmissionId(commission_id, cleanStudentName);
 
         const newSubmission = new Submission({
@@ -814,7 +811,8 @@ export const createBatchSubmissions = async (req, res) => {
           file_name: 'entrega.txt',
           file_size: fileStats.size,
           file_content_preview: fileContentPreview,
-          file_path: storageResult.file_path,
+          file_content: storageResult.file_content,
+          file_content_length: storageResult.content_length,
           file_storage_type: storageResult.storage_type,
           file_mime_type: storageResult.mime_type,
           uploaded_by: req.user.userId,

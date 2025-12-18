@@ -64,7 +64,7 @@ services:
     volumes:
       - ./backend:/app
       - /app/node_modules
-      - backend_uploads:/app/uploads
+      # - backend_uploads:/app/uploads  # COMENTADO: Ya no se usa filesystem para submissions (se guardan en MongoDB)
 
     networks:
       - correcion-network
@@ -113,7 +113,7 @@ services:
   n8n:
     # OPCIÓN 1: Imagen oficial (para desarrollo o primera configuración)
     # Descomenta esto si aún no has creado tu imagen preconfigurada
-    image: juancruzrobledo/n8n-correcion-automatica:v2
+    image: juancruzrobledo/n8n-correcion-automatica:v3
 
     # OPCIÓN 2: Imagen preconfigurada (para producción)
     # Una vez que hayas seguido n8n/README-PRECONFIGURACION.md, comenta la línea anterior
@@ -184,6 +184,7 @@ volumes:
     driver: local
     name: correcion_n8n_data
 
-  backend_uploads:
-    driver: local
-    name: correcion_backend_uploads
+  # COMENTADO: Ya no se necesita para submissions (se guardan en MongoDB)
+  # backend_uploads:
+  #   driver: local
+  #   name: correcion_backend_uploads

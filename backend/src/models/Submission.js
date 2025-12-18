@@ -73,23 +73,35 @@ const submissionSchema = new mongoose.Schema(
       maxlength: 500,
     },
 
-    // Almacenamiento local
+    // Almacenamiento en MongoDB (nuevo)
+    file_content: {
+      type: String,
+      default: null,
+      comment: 'Contenido completo del archivo (guardado en MongoDB)',
+    },
+    file_content_length: {
+      type: Number,
+      default: 0,
+      comment: 'Tamaño del contenido en bytes',
+    },
+
+    // Almacenamiento legacy (deprecated)
     file_path: {
       type: String,
       trim: true,
       default: null,
-      comment: 'Ruta local del archivo en el sistema (ej: uploads/submissions/...)',
+      comment: '[DEPRECATED] Ruta local del archivo en el sistema. Usar file_content para nuevas submissions.',
     },
     file_storage_type: {
       type: String,
-      enum: ['local'],
-      default: 'local',
-      comment: 'Tipo de almacenamiento (solo local por ahora)',
+      enum: ['local', 'mongodb'],
+      default: 'mongodb',
+      comment: 'Tipo de almacenamiento: mongodb (nuevo) o local (legacy)',
     },
     file_mime_type: {
       type: String,
       default: null,
-      comment: 'MIME type del archivo (application/pdf, application/zip, etc.)',
+      comment: 'MIME type del archivo (application/pdf, application/zip, text/plain, etc.)',
     },
 
     // Metadata

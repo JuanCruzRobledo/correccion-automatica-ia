@@ -1,0 +1,246 @@
+{
+  "name": "Obtener Rúbrica desde PDF (con API Key desde Backend)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rubrica",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        300
+      ],
+      "id": "webhook-rubrica",
+      "name": "Webhook: Rubrica",
+      "webhookId": "rubrica-webhook"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "gemini-api-key",
+              "name": "gemini_api_key",
+              "value": "={{ $json.body.gemini_api_key }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        20,
+        300
+      ],
+      "id": "extraer-api-key",
+      "name": "Extraer API Key"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/upload/v1beta/files?key={{ $('Extraer API Key').item.json.gemini_api_key }}&uploadType=media",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{ \"Content-Type\": \"application/pdf\" }",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        240,
+        300
+      ],
+      "id": "gemini-upload-pdf",
+      "name": "Gemini: Upload PDF",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "pdf-uri",
+              "name": "pdf_uri",
+              "value": "={{ $json.file.uri }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        460,
+        300
+      ],
+      "id": "extraer-uri-pdf",
+      "name": "Extraer URI PDF"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Construir body para Gemini API - Generación de Rúbrica desde PDF\n\nconst pdfUri = $input.first().json.pdf_uri;\n\nif (!pdfUri) {\n  return [{ json: { error: \"missing pdfUri\" } }];\n}\n\nconst mimeType = \"application/pdf\";\n\nconst prompt = `Rol del sistema\nSos un asistente experto en evaluación académica que convierte instrucciones de trabajos prácticos y exámenes (en PDF) en rúbricas JSON estandarizadas, completas y verificables.\n\nObjetivo\nA partir del contenido del PDF provisto, generá una rúbrica en JSON que describa con precisión cómo evaluar la entrega, incluyendo criterios, pesos, penalizaciones y metadatos. La salida debe ser un único objeto JSON válido (sin texto adicional).\n\nEntrada\n\nUn PDF de trabajo práctico, examen parcial o examen final (puede tener listas, consignas, tablas, consignas numeradas, etc.).\n\nEl PDF puede contener: objetivos, consignas, resultados de aprendizaje, formato de entrega, lenguaje/tecnología requerida, criterios de corrección, puntajes, notas y restricciones.\n\nSalida (SOLO JSON, sin comentarios)\n\nUn objeto que siga el esquema canónico de abajo.\n\nCumplí todas las reglas de \"Normas de salida\" y \"Validaciones\".\n\nEsquema canónico de la rúbrica (JSON Schema informal):\n\n{\n  \"rubric_id\": \"string-kebab-case\",\n  \"title\": \"string\",\n  \"version\": \"1.0\",\n  \"assessment_type\": \"tp | parcial | final\",\n  \"course\": \"string | null\",\n  \"language_or_stack\": [\"python\",\"java\",\"c\",\"sql\",\"web\", \"...\"],\n  \"submission\": {\n    \"single_file\": true,\n    \"accepted_extensions\": [\".py\", \".ipynb\", \".pdf\", \".zip\", \"...\"],\n    \"delivery_channel\": \"plataforma | email | repositorio | otro\",\n    \"constraints\": [\n      \"Reglas de entrega claras, p.ej. nombre de archivo, estructura, límite de páginas.\"\n    ]\n  },\n  \"grading\": {\n    \"policy\": \"weighted_average | sum\",\n    \"rounding\": \"half_up | half_even | none\",\n    \"total_points\": 100\n  },\n  \"criteria\": [\n    {\n      \"id\": \"C1\",\n      \"name\": \"string\",\n      \"weight\": 0.00,\n      \"description\": \"Qué se evalúa, con sub-pesos si corresponde\",\n      \"subcriteria\": [\n        { \"name\": \"string\", \"weight\": 0.00, \"evidence\": [\"qué evidencia mirar\"] }\n      ]\n    }\n  ],\n  \"global_descriptors\": {\n    \"Excelente\": \"90–100: ...\",\n    \"Muy Bueno\": \"80–89: ...\",\n    \"Aprobado\": \"60–79: ...\",\n    \"Insuficiente\": \"<60: ...\"\n  },\n  \"penalties\": [\n    { \"description\": \"string\", \"penalty_percent\": 0 }\n  ],\n  \"mandatory_fail_conditions\": [\n    {\n      \"pattern\": \"regex opcional para detectar condiciones de desaprobación\",\n      \"max_final_score\": 40,\n      \"reason\": \"string\"\n    }\n  ],\n  \"scoring_notes\": [\n    \"Instrucciones para la persona correctora\"\n  ],\n  \"tasks\": [\n    {\n      \"label\": \"T1\",\n      \"prompt_excerpt\": \"texto breve de la consigna correspondiente\",\n      \"points\": 0,\n      \"links_to_criteria\": [\"C1\",\"C3\"]\n    }\n  ],\n  \"metadata\": {\n    \"institution\": \"string | null\",\n    \"instructor\": \"string | null\",\n    \"date\": \"YYYY-MM-DD | null\",\n    \"source_pdf_title\": \"string | null\",\n    \"pages_parsed\": [1,2,3],\n    \"notes\": [\"cualquier observación relevante\"]\n  }\n}\n\nJSON válido: no incluyas texto fuera del objeto JSON, ni comentarios, ni comillas inteligentes.\n\nPesos: la suma de weight en criteria debe ser 1.0 (o muy cercano; si redondeás, usá rounding y ajustá el último criterio).\n\ntotal_points: por defecto 100 si el PDF no especifica otro.\n\nassessment_type: \"tp\" si es trabajo práctico; \"parcial\" o \"final\" si es examen.\n\nlanguage_or_stack: inferí desde el PDF. Si no hay pista, dejá lista vacía [].\n\nsubmission: inferí canales, formatos de archivo y restricciones.\n\ncriteria: diseñá entre 4 y 7 criterios macro.\n\nglobal_descriptors: proveé bandas cualitativas.\n\npenalties: extraé o proponé reglas comunes.\n\nmandatory_fail_conditions: si el PDF define prohibiciones, expresalas.\n\ntasks: enumerá las consignas principales.\n\nmetadata: completá lo que el PDF permita inferir.`;\n\nconst body = {\n  generationConfig: {\n    temperature: 0,\n    topK: 1,\n    topP: 1,\n    candidateCount: 1,\n    responseMimeType: \"application/json\"\n  },\n  contents: [\n    {\n      role: \"user\",\n      parts: [\n        { text: prompt },\n        { fileData: { fileUri: pdfUri, mimeType: mimeType } }\n      ]\n    }\n  ]\n};\n\nreturn [{ json: { geminiBody: body } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ],
+      "id": "construir-body-gemini",
+      "name": "Construir Body Gemini"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={{ $('Extraer API Key').first().json.gemini_api_key }}",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{ \"Content-Type\": \"application/json\" }",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.geminiBody }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        900,
+        300
+      ],
+      "id": "gemini-generar-rubrica",
+      "name": "Gemini: Generar Rúbrica",
+      "retryOnFail": true,
+      "waitBetweenTries": 3000,
+      "maxTries": 3,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parser de respuesta de Gemini para rúbrica\n\nconst geminiResponse = $input.first().json;\n\ntry {\n  // Verificar si hay error de Gemini\n  if (geminiResponse.error) {\n    const errorMsg = geminiResponse.error.message || JSON.stringify(geminiResponse.error);\n    const errorCode = geminiResponse.error.code || 'UNKNOWN';\n    throw new Error(`Error de Gemini [${errorCode}]: ${errorMsg}`);\n  }\n\n  let responseArray;\n  \n  if (Array.isArray(geminiResponse)) {\n    responseArray = geminiResponse;\n  } else if (geminiResponse.body && Array.isArray(geminiResponse.body)) {\n    responseArray = geminiResponse.body;\n  } else if (geminiResponse.data && Array.isArray(geminiResponse.data)) {\n    responseArray = geminiResponse.data;\n  } else {\n    responseArray = [geminiResponse];\n  }\n  \n  const candidate = responseArray[0]?.candidates?.[0];\n  \n  if (!candidate) {\n    throw new Error(`No se encontró candidate. Estructura recibida: ${JSON.stringify(geminiResponse).substring(0, 200)}`);\n  }\n  \n  const textContent = candidate.content?.parts?.[0]?.text;\n  \n  if (!textContent) {\n    throw new Error(\"No se encontró texto en la respuesta\");\n  }\n  \n  // Intentar parsear como JSON directo (porque especificamos responseMimeType: application/json)\n  let rubricJson;\n  try {\n    rubricJson = JSON.parse(textContent);\n  } catch (parseError) {\n    // Si falla, intentar extraer JSON de code blocks\n    const match = textContent.match(/```json\\s*([\\s\\S]*?)```/i) || textContent.match(/```\\s*([\\s\\S]*?)```/);\n    if (match) {\n      rubricJson = JSON.parse(match[1].trim());\n    } else {\n      throw new Error(\"No se pudo parsear JSON de la respuesta\");\n    }\n  }\n  \n  // Retornar rúbrica\n  return [{ \n    json: { \n      success: true,\n      rubric: rubricJson\n    } \n  }];\n  \n} catch (error) {\n  return [{ \n    json: { \n      success: false,\n      error: \"Error al procesar rúbrica\",\n      detalle: error.message\n    } \n  }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        300
+      ],
+      "id": "parsear-respuesta",
+      "name": "Parsear Respuesta"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1340,
+        300
+      ],
+      "id": "responder-rubrica",
+      "name": "Responder Rúbrica"
+    }
+  ],
+  "connections": {
+    "Webhook: Rubrica": {
+      "main": [
+        [
+          {
+            "node": "Extraer API Key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer API Key": {
+      "main": [
+        [
+          {
+            "node": "Gemini: Upload PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini: Upload PDF": {
+      "main": [
+        [
+          {
+            "node": "Extraer URI PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer URI PDF": {
+      "main": [
+        [
+          {
+            "node": "Construir Body Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Construir Body Gemini": {
+      "main": [
+        [
+          {
+            "node": "Gemini: Generar Rúbrica",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini: Generar Rúbrica": {
+      "main": [
+        [
+          {
+            "node": "Parsear Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsear Respuesta": {
+      "main": [
+        [
+          {
+            "node": "Responder Rúbrica",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}

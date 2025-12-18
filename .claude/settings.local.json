@@ -44,7 +44,9 @@
       "Bash(chmod:*)",
       "Bash(docker run:*)",
       "Bash(timeout:*)",
-      "Bash(docker logs:*)"
+      "Bash(docker logs:*)",
+      "Bash(docker exec:*)",
+      "Bash(xargs basename:*)"
     ],
     "deny": [],
     "ask": []

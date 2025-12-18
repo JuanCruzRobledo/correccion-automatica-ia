@@ -79,60 +79,29 @@ const ensureDirectoryExists = async (dirPath) => {
 };
 
 /**
- * Guarda un archivo de submission en almacenamiento local
+ * Procesa un archivo de submission y retorna su contenido para guardar en MongoDB
  * @param {Object} file - Archivo de multer o similar
  * @param {Object} submissionData - { commission_id, rubric_id, student_name }
- * @returns {Promise<Object>} { file_path, storage_type: 'local', mime_type }
+ * @returns {Promise<Object>} { file_content, storage_type: 'mongodb', mime_type, content_length }
  */
 export const saveSubmissionFile = async (file, submissionData) => {
   try {
-    const { commission_id, rubric_id, student_name } = submissionData;
-
     // Validaciones
     if (!file) {
       throw new Error('No se proporcionó ningún archivo');
     }
 
-    if (!commission_id || !rubric_id || !student_name) {
-      throw new Error('Faltan datos de submission (commission_id, rubric_id, student_name)');
-    }
-
     validateFileSize(file.size);
     validateMimeType(file.mimetype);
 
-    // Sanitizar nombre del estudiante
-    const sanitizedStudentName = sanitizeName(student_name);
+    // Leer contenido del archivo
+    let fileContent;
 
-    // Construir ruta del directorio
-    const submissionDir = path.join(
-      UPLOADS_BASE_DIR,
-      commission_id,
-      rubric_id,
-      sanitizedStudentName
-    );
-
-    // Crear directorio si no existe
-    await ensureDirectoryExists(submissionDir);
-
-    // Generar nombre único para el archivo (timestamp + nombre original)
-    const timestamp = Date.now();
-    const originalName = file.originalname || file.name || 'archivo';
-    const fileName = `${timestamp}-${sanitizeName(path.parse(originalName).name)}${path.extname(
-      originalName
-    )}`;
-
-    // Ruta completa del archivo
-    const filePath = path.join(submissionDir, fileName);
-
-    // Guardar archivo
-    // Si el archivo viene con buffer (multer memory storage)
     if (file.buffer) {
-      await fs.writeFile(filePath, file.buffer);
-    }
-    // Si el archivo viene con path (multer disk storage)
-    else if (file.path) {
-      await fs.copyFile(file.path, filePath);
-      // Eliminar archivo temporal si existe
+      fileContent = file.buffer.toString('utf-8');
+    } else if (file.path) {
+      fileContent = await fs.readFile(file.path, 'utf-8');
+      // Eliminar archivo temporal
       try {
         await fs.unlink(file.path);
       } catch (err) {
@@ -142,28 +111,29 @@ export const saveSubmissionFile = async (file, submissionData) => {
       throw new Error('El archivo no tiene buffer ni path');
     }
 
-    // Retornar ruta relativa desde la raíz del proyecto
-    const relativePath = path.relative(path.join(__dirname, '../..'), filePath);
-
-    console.log(`✅ Archivo guardado: ${relativePath}`);
+    const originalName = file.originalname || file.name || 'archivo';
+    console.log(`✅ Archivo procesado: ${originalName} (${fileContent.length} bytes)`);
 
     return {
-      file_path: relativePath.replace(/\\/g, '/'), // Normalizar separadores a /
-      storage_type: 'local',
+      file_content: fileContent,
+      storage_type: 'mongodb',
       mime_type: file.mimetype,
+      content_length: fileContent.length,
     };
   } catch (error) {
-    console.error('❌ Error al guardar archivo:', error);
+    console.error('❌ Error al procesar archivo:', error);
     throw error;
   }
 };
 
 /**
- * Obtiene un archivo de submission desde almacenamiento local
+ * [DEPRECATED] Obtiene un archivo desde file_path (solo para submissions antiguas)
+ * Nuevas submissions usan file_content directamente de MongoDB
  * @param {String} filePath - Ruta relativa del archivo
  * @returns {Promise<Buffer>} Buffer del archivo
  */
 export const getSubmissionFile = async (filePath) => {
+  console.warn('⚠️ getSubmissionFile está deprecated. Usar file_content de MongoDB.');
   try {
     if (!filePath) {
       throw new Error('No se proporcionó ruta de archivo');
